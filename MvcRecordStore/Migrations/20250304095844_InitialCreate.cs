@@ -53,6 +53,33 @@ namespace MvcRecordStore.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Genres",
+                columns: table => new
+                {
+                    ID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Genres", x => x.ID);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Labels",
+                columns: table => new
+                {
+                    ID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Country = table.Column<string>(type: "nvarchar(60)", maxLength: 60, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Labels", x => x.ID);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "AspNetRoleClaims",
                 columns: table => new
                 {
@@ -158,6 +185,112 @@ namespace MvcRecordStore.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "Artists",
+                columns: table => new
+                {
+                    ID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Country = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    LabelID = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Artists", x => x.ID);
+                    table.ForeignKey(
+                        name: "FK_Artists_Labels_LabelID",
+                        column: x => x.LabelID,
+                        principalTable: "Labels",
+                        principalColumn: "ID",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ArtistGenre",
+                columns: table => new
+                {
+                    ArtistsID = table.Column<int>(type: "int", nullable: false),
+                    GenresID = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ArtistGenre", x => new { x.ArtistsID, x.GenresID });
+                    table.ForeignKey(
+                        name: "FK_ArtistGenre_Artists_ArtistsID",
+                        column: x => x.ArtistsID,
+                        principalTable: "Artists",
+                        principalColumn: "ID",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ArtistGenre_Genres_GenresID",
+                        column: x => x.GenresID,
+                        principalTable: "Genres",
+                        principalColumn: "ID",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Records",
+                columns: table => new
+                {
+                    ID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ReleaseDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ArtistID = table.Column<int>(type: "int", nullable: false),
+                    LabelID = table.Column<int>(type: "int", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Records", x => x.ID);
+                    table.ForeignKey(
+                        name: "FK_Records_Artists_ArtistID",
+                        column: x => x.ArtistID,
+                        principalTable: "Artists",
+                        principalColumn: "ID",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Records_Labels_LabelID",
+                        column: x => x.LabelID,
+                        principalTable: "Labels",
+                        principalColumn: "ID");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "GenreRecord",
+                columns: table => new
+                {
+                    GenresID = table.Column<int>(type: "int", nullable: false),
+                    RecordsID = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_GenreRecord", x => new { x.GenresID, x.RecordsID });
+                    table.ForeignKey(
+                        name: "FK_GenreRecord_Genres_GenresID",
+                        column: x => x.GenresID,
+                        principalTable: "Genres",
+                        principalColumn: "ID",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_GenreRecord_Records_RecordsID",
+                        column: x => x.RecordsID,
+                        principalTable: "Records",
+                        principalColumn: "ID",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ArtistGenre_GenresID",
+                table: "ArtistGenre",
+                column: "GenresID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Artists_LabelID",
+                table: "Artists",
+                column: "LabelID");
+
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetRoleClaims_RoleId",
                 table: "AspNetRoleClaims",
@@ -196,11 +329,29 @@ namespace MvcRecordStore.Migrations
                 column: "NormalizedUserName",
                 unique: true,
                 filter: "[NormalizedUserName] IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_GenreRecord_RecordsID",
+                table: "GenreRecord",
+                column: "RecordsID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Records_ArtistID",
+                table: "Records",
+                column: "ArtistID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Records_LabelID",
+                table: "Records",
+                column: "LabelID");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "ArtistGenre");
+
             migrationBuilder.DropTable(
                 name: "AspNetRoleClaims");
 
@@ -217,10 +368,25 @@ namespace MvcRecordStore.Migrations
                 name: "AspNetUserTokens");
 
             migrationBuilder.DropTable(
+                name: "GenreRecord");
+
+            migrationBuilder.DropTable(
                 name: "AspNetRoles");
 
             migrationBuilder.DropTable(
                 name: "AspNetUsers");
+
+            migrationBuilder.DropTable(
+                name: "Genres");
+
+            migrationBuilder.DropTable(
+                name: "Records");
+
+            migrationBuilder.DropTable(
+                name: "Artists");
+
+            migrationBuilder.DropTable(
+                name: "Labels");
         }
     }
 }

@@ -1,7 +1,7 @@
-using MvcRecordStore.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using MvcRecordStore.Models;
 
 namespace MvcRecordStore.Data;
 
@@ -19,4 +19,9 @@ public class StoreDbContext : IdentityDbContext<StoreUser>
         // For example, you can rename the ASP.NET Identity table names and more.
         // Add your customizations after calling base.OnModelCreating(builder);
     }
+
+    public DbSet<Label> Labels { get; set; }
+    public DbSet<Artist> Artists { get; set; }
+    public DbSet<Genre> Genres { get; set; }
+    public DbSet<Record> Records { get; set; }
 }

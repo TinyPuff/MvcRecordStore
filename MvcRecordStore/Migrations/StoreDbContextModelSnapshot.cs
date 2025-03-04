@@ -22,6 +22,36 @@ namespace MvcRecordStore.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("ArtistGenre", b =>
+                {
+                    b.Property<int>("ArtistsID")
+                        .HasColumnType("int");
+
+                    b.Property<int>("GenresID")
+                        .HasColumnType("int");
+
+                    b.HasKey("ArtistsID", "GenresID");
+
+                    b.HasIndex("GenresID");
+
+                    b.ToTable("ArtistGenre");
+                });
+
+            modelBuilder.Entity("GenreRecord", b =>
+                {
+                    b.Property<int>("GenresID")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RecordsID")
+                        .HasColumnType("int");
+
+                    b.HasKey("GenresID", "RecordsID");
+
+                    b.HasIndex("RecordsID");
+
+                    b.ToTable("GenreRecord");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
                     b.Property<string>("Id")
@@ -233,6 +263,131 @@ namespace MvcRecordStore.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("MvcRecordStore.Models.Artist", b =>
+                {
+                    b.Property<int>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
+
+                    b.Property<string>("Country")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("LabelID")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("ID");
+
+                    b.HasIndex("LabelID");
+
+                    b.ToTable("Artists");
+                });
+
+            modelBuilder.Entity("MvcRecordStore.Models.Genre", b =>
+                {
+                    b.Property<int>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("ID");
+
+                    b.ToTable("Genres");
+                });
+
+            modelBuilder.Entity("MvcRecordStore.Models.Label", b =>
+                {
+                    b.Property<int>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
+
+                    b.Property<string>("Country")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("ID");
+
+                    b.ToTable("Labels");
+                });
+
+            modelBuilder.Entity("MvcRecordStore.Models.Record", b =>
+                {
+                    b.Property<int>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
+
+                    b.Property<int>("ArtistID")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("LabelID")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("ReleaseDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("ID");
+
+                    b.HasIndex("ArtistID");
+
+                    b.HasIndex("LabelID");
+
+                    b.ToTable("Records");
+                });
+
+            modelBuilder.Entity("ArtistGenre", b =>
+                {
+                    b.HasOne("MvcRecordStore.Models.Artist", null)
+                        .WithMany()
+                        .HasForeignKey("ArtistsID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MvcRecordStore.Models.Genre", null)
+                        .WithMany()
+                        .HasForeignKey("GenresID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("GenreRecord", b =>
+                {
+                    b.HasOne("MvcRecordStore.Models.Genre", null)
+                        .WithMany()
+                        .HasForeignKey("GenresID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MvcRecordStore.Models.Record", null)
+                        .WithMany()
+                        .HasForeignKey("RecordsID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -282,6 +437,46 @@ namespace MvcRecordStore.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("MvcRecordStore.Models.Artist", b =>
+                {
+                    b.HasOne("MvcRecordStore.Models.Label", "Label")
+                        .WithMany("Artists")
+                        .HasForeignKey("LabelID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Label");
+                });
+
+            modelBuilder.Entity("MvcRecordStore.Models.Record", b =>
+                {
+                    b.HasOne("MvcRecordStore.Models.Artist", "Artist")
+                        .WithMany("Records")
+                        .HasForeignKey("ArtistID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MvcRecordStore.Models.Label", "Label")
+                        .WithMany("Records")
+                        .HasForeignKey("LabelID");
+
+                    b.Navigation("Artist");
+
+                    b.Navigation("Label");
+                });
+
+            modelBuilder.Entity("MvcRecordStore.Models.Artist", b =>
+                {
+                    b.Navigation("Records");
+                });
+
+            modelBuilder.Entity("MvcRecordStore.Models.Label", b =>
+                {
+                    b.Navigation("Artists");
+
+                    b.Navigation("Records");
                 });
 #pragma warning restore 612, 618
         }
