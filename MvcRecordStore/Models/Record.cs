@@ -11,8 +11,11 @@ public class Record
     public string Name { get; set; }
 
     [Required]
-    [DataType(DataType.DateTime)]
-    [DisplayFormat(DataFormatString = "{0:yyyy-MM-dd HH:mm}", ApplyFormatInEditMode = true)]
+    public RecordType Type { get; set; }
+
+    [Required]
+    [DataType(DataType.Date)]
+    [DisplayFormat(DataFormatString = "{0:yyyy-MM-dd}", ApplyFormatInEditMode = true)]
     public DateTime ReleaseDate { get; set; }
 
     public Artist Artist { get; set; }
@@ -26,3 +29,12 @@ public class Record
     [Required]
     public ICollection<Genre> Genres { get; set; }
 }
+
+public enum RecordType
+    {
+        Single,
+        Demo,
+        EP,
+        Album,
+        Compilation
+    }
