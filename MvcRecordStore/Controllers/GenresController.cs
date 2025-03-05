@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using MvcRecordStore.Data;
 using MvcRecordStore.Models;
+using MvcRecordStore.Models.ViewModels;
 
 namespace MvcRecordStore.Controllers
 {
@@ -54,15 +55,19 @@ namespace MvcRecordStore.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("ID,Name")] Genre genre)
+        public async Task<IActionResult> Create([Bind("ID,Name")] GenreCreateVM genreVM)
         {
             if (ModelState.IsValid)
             {
+                var genre = new Genre
+                {
+                    Name = genreVM.Name
+                };
                 _context.Add(genre);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            return View(genre);
+            return View(genreVM);
         }
 
         // GET: Genres/Edit/5
@@ -78,7 +83,13 @@ namespace MvcRecordStore.Controllers
             {
                 return NotFound();
             }
-            return View(genre);
+
+            var genreVM = new GenreCreateVM
+            {
+                ID = genre.ID,
+                Name = genre.Name
+            };
+            return View(genreVM);
         }
 
         // POST: Genres/Edit/5
@@ -86,15 +97,18 @@ namespace MvcRecordStore.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("ID,Name")] Genre genre)
+        public async Task<IActionResult> Edit(int id, [Bind("ID,Name")] GenreCreateVM genreVM)
         {
-            if (id != genre.ID)
+            if (id != genreVM.ID)
             {
                 return NotFound();
             }
 
             if (ModelState.IsValid)
             {
+                var genre = await _context.Genres.FindAsync(id);
+                genre.Name = genreVM.Name;
+
                 try
                 {
                     _context.Update(genre);
@@ -113,7 +127,7 @@ namespace MvcRecordStore.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
-            return View(genre);
+            return RedirectToAction("Edit", new { id = genreVM.ID });;
         }
 
         // GET: Genres/Delete/5

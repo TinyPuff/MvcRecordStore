@@ -1,4 +1,4 @@
-@model MvcRecordStore.Models.Artist
+@model MvcRecordStore.Models.ViewModels.ArtistCreateVM
 
 @{
     ViewData["Title"] = "Create";
@@ -23,8 +23,24 @@
                 <span asp-validation-for="Country" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="LabelID" class="control-label"></label>
-                <select asp-for="LabelID" class ="form-control" asp-items="ViewBag.LabelID"></select>
+                <label asp-for="LabelID" class="control-label">Label</label>
+                <select asp-for="LabelID" class="form-control">
+                    @foreach(var item in ViewBag.Labels)
+                    {
+                        <option value="@item.ID">@item.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Genres</label>
+                @foreach (var item in ViewBag.Genres)
+                {
+                    <div>
+                        <input type="checkbox" name="SelectedGenres" value="@item.ID" />
+                        <label>@item.Name</label>
+                    </div>
+                }
+                <span asp-validation-for="SelectedGenres"></span>
             </div>
             <div class="form-group">
                 <input type="submit" value="Create" class="btn btn-primary" />
@@ -38,5 +54,7 @@
 </div>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
 }

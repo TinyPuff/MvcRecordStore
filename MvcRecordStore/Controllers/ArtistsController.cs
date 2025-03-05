@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using MvcRecordStore.Data;
 using MvcRecordStore.Models;
+using MvcRecordStore.Models.ViewModels;
 
 namespace MvcRecordStore.Controllers
 {
@@ -48,7 +49,9 @@ namespace MvcRecordStore.Controllers
         // GET: Artists/Create
         public IActionResult Create()
         {
-            ViewData["LabelID"] = new SelectList(_context.Labels, "ID", "Country");
+            ViewBag.Labels = _context.Labels.ToList();
+            ViewBag.Genres = _context.Genres.ToList();
+
             return View();
         }
 
@@ -57,16 +60,37 @@ namespace MvcRecordStore.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("ID,Name,Country,LabelID")] Artist artist)
+        public async Task<IActionResult> Create([Bind("ID,Name,Country,LabelID,SelectedGenres")] ArtistCreateVM artistVM)
         {
+            var genres = _context.Genres
+            .Where(g => artistVM.SelectedGenres.Contains(g.ID))
+            .ToList();
+
+            var label = await _context.Labels.FirstOrDefaultAsync(l => l.ID == artistVM.LabelID);
+
+            foreach (var error in ModelState.Values.SelectMany(v => v.Errors))
+            {
+                Console.WriteLine(error.ErrorMessage);
+            }
+
             if (ModelState.IsValid)
             {
+                var artist = new Artist
+                {
+                    Name = artistVM.Name,
+                    Country = artistVM.Country,
+                    Label = label,
+                    LabelID = label.ID,
+                    Genres = genres
+                };
                 _context.Add(artist);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["LabelID"] = new SelectList(_context.Labels, "ID", "Country", artist.LabelID);
-            return View(artist);
+
+            ViewBag.Labels = _context.Labels.ToList();
+            ViewBag.Genres = _context.Genres.ToList();
+            return View(artistVM);
         }
 
         // GET: Artists/Edit/5
@@ -77,13 +101,33 @@ namespace MvcRecordStore.Controllers
                 return NotFound();
             }
 
-            var artist = await _context.Artists.FindAsync(id);
+            var artist = await _context.Artists
+            .Include(a => a.Genres)
+            .Include(a => a.Label)
+            .FirstOrDefaultAsync(a => a.ID == id);
             if (artist == null)
             {
                 return NotFound();
             }
-            ViewData["LabelID"] = new SelectList(_context.Labels, "ID", "Country", artist.LabelID);
-            return View(artist);
+
+            var selectedGenres = new List<int>();
+            foreach(var genre in artist.Genres)
+            {
+                selectedGenres.Add(genre.ID);
+            }
+
+            var artistVM = new ArtistCreateVM
+            {
+                ID = artist.ID,
+                Name = artist.Name,
+                Country = artist.Country,
+                LabelID = artist.LabelID,
+                SelectedGenres = selectedGenres
+            };
+
+            ViewBag.Labels = _context.Labels.ToList();
+            ViewBag.Genres = _context.Genres.ToList();
+            return View(artistVM);
         }
 
         // POST: Artists/Edit/5
@@ -91,15 +135,37 @@ namespace MvcRecordStore.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("ID,Name,Country,LabelID")] Artist artist)
+        public async Task<IActionResult> Edit(int id, [Bind("ID,Name,Country,LabelID,SelectedGenres")] ArtistCreateVM artistVM)
         {
-            if (id != artist.ID)
+            var genres = _context.Genres
+            .Where(g => artistVM.SelectedGenres.Contains(g.ID))
+            .ToList();
+
+            var label = await _context.Labels.FirstOrDefaultAsync(l => l.ID == artistVM.LabelID);
+
+            if (id != artistVM.ID)
             {
                 return NotFound();
             }
 
+            foreach (var error in ModelState.Values.SelectMany(v => v.Errors))
+            {
+                Console.WriteLine(error.ErrorMessage);
+            }
+
             if (ModelState.IsValid)
             {
+                var artist = await _context.Artists
+                .Include(a => a.Genres)
+                .Include(a => a.Label)
+                .FirstOrDefaultAsync(a => a.ID == id);
+
+                artist.Name = artistVM.Name;
+                artist.Country = artistVM.Country;
+                artist.Label = label;
+                artist.LabelID = label.ID;
+                artist.Genres = genres;
+
                 try
                 {
                     _context.Update(artist);
@@ -118,8 +184,9 @@ namespace MvcRecordStore.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["LabelID"] = new SelectList(_context.Labels, "ID", "Country", artist.LabelID);
-            return View(artist);
+            ViewBag.Labels = _context.Labels.ToList();
+            ViewBag.Genres = _context.Genres.ToList();
+            return RedirectToAction("Edit", new { id = artistVM.ID });
         }
 
         // GET: Artists/Delete/5
