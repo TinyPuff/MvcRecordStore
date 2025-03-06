@@ -18,6 +18,10 @@ public class Record
     [DisplayFormat(DataFormatString = "{0:yyyy-MM-dd}", ApplyFormatInEditMode = true)]
     public DateTime ReleaseDate { get; set; }
 
+    public int Stock { get; set; }
+
+    public ICollection<RecordPrice> Prices { get; set; }
+
     public Artist Artist { get; set; }
 
     public int ArtistID { get; set; }
@@ -31,10 +35,10 @@ public class Record
 }
 
 public enum RecordType
-    {
-        Single,
-        Demo,
-        EP,
-        Album,
-        Compilation
-    }
+{
+    Single,
+    Demo,
+    EP,
+    Album,
+    Compilation
+}

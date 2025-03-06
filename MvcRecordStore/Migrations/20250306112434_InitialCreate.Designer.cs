@@ -12,8 +12,8 @@ using MvcRecordStore.Data;
 namespace MvcRecordStore.Migrations
 {
     [DbContext(typeof(StoreDbContext))]
-    [Migration("20250304205926_AddedRecordType")]
-    partial class AddedRecordType
+    [Migration("20250306112434_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -294,6 +294,28 @@ namespace MvcRecordStore.Migrations
                     b.ToTable("Artists");
                 });
 
+            modelBuilder.Entity("MvcRecordStore.Models.Cart", b =>
+                {
+                    b.Property<int>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
+
+                    b.Property<string>("BuyerID")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<double>("TotalPrice")
+                        .HasColumnType("float");
+
+                    b.HasKey("ID");
+
+                    b.HasIndex("BuyerID");
+
+                    b.ToTable("Carts");
+                });
+
             modelBuilder.Entity("MvcRecordStore.Models.Genre", b =>
                 {
                     b.Property<int>("ID")
@@ -333,6 +355,31 @@ namespace MvcRecordStore.Migrations
                     b.ToTable("Labels");
                 });
 
+            modelBuilder.Entity("MvcRecordStore.Models.Order", b =>
+                {
+                    b.Property<int>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
+
+                    b.Property<string>("BuyerID")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<double>("TotalPrice")
+                        .HasColumnType("float");
+
+                    b.Property<int?>("TrackingNumber")
+                        .HasColumnType("int");
+
+                    b.HasKey("ID");
+
+                    b.HasIndex("BuyerID");
+
+                    b.ToTable("Orders");
+                });
+
             modelBuilder.Entity("MvcRecordStore.Models.Record", b =>
                 {
                     b.Property<int>("ID")
@@ -342,6 +389,9 @@ namespace MvcRecordStore.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
 
                     b.Property<int>("ArtistID")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("CartID")
                         .HasColumnType("int");
 
                     b.Property<int?>("LabelID")
@@ -354,6 +404,9 @@ namespace MvcRecordStore.Migrations
                     b.Property<DateTime>("ReleaseDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("Stock")
+                        .HasColumnType("int");
+
                     b.Property<int>("Type")
                         .HasColumnType("int");
 
@@ -361,9 +414,36 @@ namespace MvcRecordStore.Migrations
 
                     b.HasIndex("ArtistID");
 
+                    b.HasIndex("CartID");
+
                     b.HasIndex("LabelID");
 
                     b.ToTable("Records");
+                });
+
+            modelBuilder.Entity("MvcRecordStore.Models.RecordPrice", b =>
+                {
+                    b.Property<int>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
+
+                    b.Property<string>("Format")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<double>("Price")
+                        .HasColumnType("float");
+
+                    b.Property<int>("RecordID")
+                        .HasColumnType("int");
+
+                    b.HasKey("ID");
+
+                    b.HasIndex("RecordID");
+
+                    b.ToTable("RecordPrices");
                 });
 
             modelBuilder.Entity("ArtistGenre", b =>
@@ -458,6 +538,28 @@ namespace MvcRecordStore.Migrations
                     b.Navigation("Label");
                 });
 
+            modelBuilder.Entity("MvcRecordStore.Models.Cart", b =>
+                {
+                    b.HasOne("MvcRecordStore.Data.StoreUser", "Buyer")
+                        .WithMany()
+                        .HasForeignKey("BuyerID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Buyer");
+                });
+
+            modelBuilder.Entity("MvcRecordStore.Models.Order", b =>
+                {
+                    b.HasOne("MvcRecordStore.Data.StoreUser", "Buyer")
+                        .WithMany()
+                        .HasForeignKey("BuyerID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Buyer");
+                });
+
             modelBuilder.Entity("MvcRecordStore.Models.Record", b =>
                 {
                     b.HasOne("MvcRecordStore.Models.Artist", "Artist")
@@ -465,6 +567,10 @@ namespace MvcRecordStore.Migrations
                         .HasForeignKey("ArtistID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("MvcRecordStore.Models.Cart", null)
+                        .WithMany("Products")
+                        .HasForeignKey("CartID");
 
                     b.HasOne("MvcRecordStore.Models.Label", "Label")
                         .WithMany("Records")
@@ -475,9 +581,25 @@ namespace MvcRecordStore.Migrations
                     b.Navigation("Label");
                 });
 
+            modelBuilder.Entity("MvcRecordStore.Models.RecordPrice", b =>
+                {
+                    b.HasOne("MvcRecordStore.Models.Record", "Record")
+                        .WithMany("Prices")
+                        .HasForeignKey("RecordID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Record");
+                });
+
             modelBuilder.Entity("MvcRecordStore.Models.Artist", b =>
                 {
                     b.Navigation("Records");
+                });
+
+            modelBuilder.Entity("MvcRecordStore.Models.Cart", b =>
+                {
+                    b.Navigation("Products");
                 });
 
             modelBuilder.Entity("MvcRecordStore.Models.Label", b =>
@@ -485,6 +607,11 @@ namespace MvcRecordStore.Migrations
                     b.Navigation("Artists");
 
                     b.Navigation("Records");
+                });
+
+            modelBuilder.Entity("MvcRecordStore.Models.Record", b =>
+                {
+                    b.Navigation("Prices");
                 });
 #pragma warning restore 612, 618
         }
