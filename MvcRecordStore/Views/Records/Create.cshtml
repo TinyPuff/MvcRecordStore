@@ -35,6 +35,10 @@
                 <input asp-for="ReleaseDate" class="form-control" />
                 <span asp-validation-for="ReleaseDate" class="text-danger"></span>
             </div>
+            <div id="formatsContainer">
+                @await Component.InvokeAsync("FormatPriceVC", new { index = 0 })
+            </div>
+            <button type="button" id="addFormatButton" class="btn btn-secondary">Add Format</button>
             <div class="form-group">
                 <label asp-for="LabelID" class="control-label">Label</label>
                 <select asp-for="LabelID" class="form-control">
@@ -68,4 +72,25 @@
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            document.getElementById("addFormatButton").addEventListener("click", function () {
+                var formatsContainer = document.getElementById("formatsContainer");
+                var formatPriceGroups = formatsContainer.getElementsByClassName("format-price-group");
+                var newIndex = formatPriceGroups.length;
+
+                var newFormatPriceGroup = formatPriceGroups[0].cloneNode(true);
+                newFormatPriceGroup.querySelectorAll("input").forEach(function(input) {
+                    var name = input.getAttribute("name");
+                    if (name) {
+                        var newName = name.replace(/\[\d+\]/, "[" + newIndex + "]");
+                        input.setAttribute("name", newName);
+                        input.value = "";
+                    }
+                });
+
+                formatsContainer.appendChild(newFormatPriceGroup);
+            });
+        });
+    </script>
 }

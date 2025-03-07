@@ -1,0 +1,11 @@
+@model MvcRecordStore.Models.ViewModels.FormatPriceVM
+@{
+    int index = ViewBag.Index != null ? (int)ViewBag.Index : 0;
+}
+
+<div class="form-group format-price-group">
+    <label>Format</label>
+    <input name="FormatPrices[@index].Format" class="form-control" placeholder="Format" />
+    <label>Price</label>
+    <input name="FormatPrices[@index].Price" class="form-control" placeholder="Price" />
+</div>
