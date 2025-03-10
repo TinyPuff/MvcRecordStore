@@ -25,6 +25,6 @@ public class StoreDbContext : IdentityDbContext<StoreUser>
     public DbSet<Genre> Genres { get; set; }
     public DbSet<Record> Records { get; set; }
     public DbSet<RecordPrice> RecordPrices { get; set; }
-    public DbSet<Cart> Carts { get; set; }
+    public DbSet<CartItem> CartItems { get; set; }
     public DbSet<Order> Orders { get; set; }
 }

@@ -13,6 +13,8 @@ public class RecordPrice
     [Required]
     public double Price { get; set; }
 
+    public int Stock { get; set; } = 0;
+
     public Record Record { get; set; }
 
     public int RecordID { get; set; }

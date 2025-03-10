@@ -12,7 +12,7 @@ using MvcRecordStore.Data;
 namespace MvcRecordStore.Migrations
 {
     [DbContext(typeof(StoreDbContext))]
-    [Migration("20250306112434_InitialCreate")]
+    [Migration("20250310105104_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -294,7 +294,7 @@ namespace MvcRecordStore.Migrations
                     b.ToTable("Artists");
                 });
 
-            modelBuilder.Entity("MvcRecordStore.Models.Cart", b =>
+            modelBuilder.Entity("MvcRecordStore.Models.CartItem", b =>
                 {
                     b.Property<int>("ID")
                         .ValueGeneratedOnAdd()
@@ -306,14 +306,24 @@ namespace MvcRecordStore.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<double>("TotalPrice")
-                        .HasColumnType("float");
+                    b.Property<int?>("OrderID")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ProductID")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
 
                     b.HasKey("ID");
 
                     b.HasIndex("BuyerID");
 
-                    b.ToTable("Carts");
+                    b.HasIndex("OrderID");
+
+                    b.HasIndex("ProductID");
+
+                    b.ToTable("CartItems");
                 });
 
             modelBuilder.Entity("MvcRecordStore.Models.Genre", b =>
@@ -391,9 +401,6 @@ namespace MvcRecordStore.Migrations
                     b.Property<int>("ArtistID")
                         .HasColumnType("int");
 
-                    b.Property<int?>("CartID")
-                        .HasColumnType("int");
-
                     b.Property<int?>("LabelID")
                         .HasColumnType("int");
 
@@ -404,17 +411,12 @@ namespace MvcRecordStore.Migrations
                     b.Property<DateTime>("ReleaseDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("Stock")
-                        .HasColumnType("int");
-
                     b.Property<int>("Type")
                         .HasColumnType("int");
 
                     b.HasKey("ID");
 
                     b.HasIndex("ArtistID");
-
-                    b.HasIndex("CartID");
 
                     b.HasIndex("LabelID");
 
@@ -437,6 +439,9 @@ namespace MvcRecordStore.Migrations
                         .HasColumnType("float");
 
                     b.Property<int>("RecordID")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Stock")
                         .HasColumnType("int");
 
                     b.HasKey("ID");
@@ -538,7 +543,7 @@ namespace MvcRecordStore.Migrations
                     b.Navigation("Label");
                 });
 
-            modelBuilder.Entity("MvcRecordStore.Models.Cart", b =>
+            modelBuilder.Entity("MvcRecordStore.Models.CartItem", b =>
                 {
                     b.HasOne("MvcRecordStore.Data.StoreUser", "Buyer")
                         .WithMany()
@@ -546,7 +551,19 @@ namespace MvcRecordStore.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("MvcRecordStore.Models.Order", null)
+                        .WithMany("CartItems")
+                        .HasForeignKey("OrderID");
+
+                    b.HasOne("MvcRecordStore.Models.RecordPrice", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Buyer");
+
+                    b.Navigation("Product");
                 });
 
             modelBuilder.Entity("MvcRecordStore.Models.Order", b =>
@@ -567,10 +584,6 @@ namespace MvcRecordStore.Migrations
                         .HasForeignKey("ArtistID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("MvcRecordStore.Models.Cart", null)
-                        .WithMany("Products")
-                        .HasForeignKey("CartID");
 
                     b.HasOne("MvcRecordStore.Models.Label", "Label")
                         .WithMany("Records")
@@ -597,16 +610,16 @@ namespace MvcRecordStore.Migrations
                     b.Navigation("Records");
                 });
 
-            modelBuilder.Entity("MvcRecordStore.Models.Cart", b =>
-                {
-                    b.Navigation("Products");
-                });
-
             modelBuilder.Entity("MvcRecordStore.Models.Label", b =>
                 {
                     b.Navigation("Artists");
 
                     b.Navigation("Records");
+                });
+
+            modelBuilder.Entity("MvcRecordStore.Models.Order", b =>
+                {
+                    b.Navigation("CartItems");
                 });
 
             modelBuilder.Entity("MvcRecordStore.Models.Record", b =>

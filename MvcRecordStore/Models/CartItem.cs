@@ -4,7 +4,7 @@ using MvcRecordStore.Data;
 
 namespace MvcRecordStore.Models;
 
-public class Cart
+public class CartItem
 {
     public int ID { get; set; }
 
@@ -13,7 +13,9 @@ public class Cart
 
     public string BuyerID { get; set; }
 
-    public double TotalPrice { get; set; } = 0.00;
+    public int Quantity { get; set; } = 0;
 
-    public ICollection<Record> Products { get; set; }
+    public RecordPrice Product { get; set; }
+
+    public int ProductID { get; set; }
 }

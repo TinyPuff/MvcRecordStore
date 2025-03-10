@@ -16,4 +16,6 @@ public class Order
     public string BuyerID { get; set; }
 
     public double TotalPrice { get; set; } = 0.00;
+
+    public ICollection<CartItem> CartItems { get; set; }
 }

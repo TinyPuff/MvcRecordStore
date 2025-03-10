@@ -186,26 +186,6 @@ namespace MvcRecordStore.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Carts",
-                columns: table => new
-                {
-                    ID = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    BuyerID = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    TotalPrice = table.Column<double>(type: "float", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Carts", x => x.ID);
-                    table.ForeignKey(
-                        name: "FK_Carts_AspNetUsers_BuyerID",
-                        column: x => x.BuyerID,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Orders",
                 columns: table => new
                 {
@@ -280,10 +260,8 @@ namespace MvcRecordStore.Migrations
                     Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Type = table.Column<int>(type: "int", nullable: false),
                     ReleaseDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Stock = table.Column<int>(type: "int", nullable: false),
                     ArtistID = table.Column<int>(type: "int", nullable: false),
-                    LabelID = table.Column<int>(type: "int", nullable: true),
-                    CartID = table.Column<int>(type: "int", nullable: true)
+                    LabelID = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -294,11 +272,6 @@ namespace MvcRecordStore.Migrations
                         principalTable: "Artists",
                         principalColumn: "ID",
                         onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_Records_Carts_CartID",
-                        column: x => x.CartID,
-                        principalTable: "Carts",
-                        principalColumn: "ID");
                     table.ForeignKey(
                         name: "FK_Records_Labels_LabelID",
                         column: x => x.LabelID,
@@ -338,6 +311,7 @@ namespace MvcRecordStore.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Format = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Price = table.Column<double>(type: "float", nullable: false),
+                    Stock = table.Column<int>(type: "int", nullable: false),
                     RecordID = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
@@ -347,6 +321,39 @@ namespace MvcRecordStore.Migrations
                         name: "FK_RecordPrices_Records_RecordID",
                         column: x => x.RecordID,
                         principalTable: "Records",
+                        principalColumn: "ID",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "CartItems",
+                columns: table => new
+                {
+                    ID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    BuyerID = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Quantity = table.Column<int>(type: "int", nullable: false),
+                    ProductID = table.Column<int>(type: "int", nullable: false),
+                    OrderID = table.Column<int>(type: "int", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CartItems", x => x.ID);
+                    table.ForeignKey(
+                        name: "FK_CartItems_AspNetUsers_BuyerID",
+                        column: x => x.BuyerID,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_CartItems_Orders_OrderID",
+                        column: x => x.OrderID,
+                        principalTable: "Orders",
+                        principalColumn: "ID");
+                    table.ForeignKey(
+                        name: "FK_CartItems_RecordPrices_ProductID",
+                        column: x => x.ProductID,
+                        principalTable: "RecordPrices",
                         principalColumn: "ID",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -401,9 +408,19 @@ namespace MvcRecordStore.Migrations
                 filter: "[NormalizedUserName] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Carts_BuyerID",
-                table: "Carts",
+                name: "IX_CartItems_BuyerID",
+                table: "CartItems",
                 column: "BuyerID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CartItems_OrderID",
+                table: "CartItems",
+                column: "OrderID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CartItems_ProductID",
+                table: "CartItems",
+                column: "ProductID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_GenreRecord_RecordsID",
@@ -424,11 +441,6 @@ namespace MvcRecordStore.Migrations
                 name: "IX_Records_ArtistID",
                 table: "Records",
                 column: "ArtistID");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Records_CartID",
-                table: "Records",
-                column: "CartID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Records_LabelID",
@@ -458,7 +470,13 @@ namespace MvcRecordStore.Migrations
                 name: "AspNetUserTokens");
 
             migrationBuilder.DropTable(
+                name: "CartItems");
+
+            migrationBuilder.DropTable(
                 name: "GenreRecord");
+
+            migrationBuilder.DropTable(
+                name: "AspNetRoles");
 
             migrationBuilder.DropTable(
                 name: "Orders");
@@ -467,10 +485,10 @@ namespace MvcRecordStore.Migrations
                 name: "RecordPrices");
 
             migrationBuilder.DropTable(
-                name: "AspNetRoles");
+                name: "Genres");
 
             migrationBuilder.DropTable(
-                name: "Genres");
+                name: "AspNetUsers");
 
             migrationBuilder.DropTable(
                 name: "Records");
@@ -479,13 +497,7 @@ namespace MvcRecordStore.Migrations
                 name: "Artists");
 
             migrationBuilder.DropTable(
-                name: "Carts");
-
-            migrationBuilder.DropTable(
                 name: "Labels");
-
-            migrationBuilder.DropTable(
-                name: "AspNetUsers");
         }
     }
 }

@@ -18,8 +18,6 @@ public class Record
     [DisplayFormat(DataFormatString = "{0:yyyy-MM-dd}", ApplyFormatInEditMode = true)]
     public DateTime ReleaseDate { get; set; }
 
-    public int Stock { get; set; }
-
     public ICollection<RecordPrice> Prices { get; set; }
 
     public Artist Artist { get; set; }
