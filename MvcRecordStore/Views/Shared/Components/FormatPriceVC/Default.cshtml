@@ -3,9 +3,11 @@
     int index = ViewBag.Index != null ? (int)ViewBag.Index : 0;
 }
 
-<div class="form-group format-price-group">
+<div class="form-group format-price-group border border-secondary rounded my-2 p-2">
     <label>Format</label>
-    <input name="FormatPrices[@index].Format" class="form-control" placeholder="Format" />
+    <input name="FormatPrices[@index].Format" class="form-control" placeholder="Format" value="@Model.Format" />
     <label>Price</label>
-    <input name="FormatPrices[@index].Price" class="form-control" placeholder="Price" />
+    <input name="FormatPrices[@index].Price" class="form-control" placeholder="Price" value="@Model.Price" />
+    <label>Stock</label>
+    <input name="FormatPrices[@index].Stock" class="form-control" placeholder="Stock" value="@Model.Stock" />
 </div>

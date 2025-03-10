@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -14,10 +17,12 @@ namespace MvcRecordStore.Controllers
     public class RecordsController : Controller
     {
         private readonly StoreDbContext _context;
+        private readonly UserManager<StoreUser> _userManager;
 
-        public RecordsController(StoreDbContext context)
+        public RecordsController(StoreDbContext context, UserManager<StoreUser> userManager)
         {
             _context = context;
+            _userManager = userManager;
         }
 
         // GET: Records
@@ -38,13 +43,88 @@ namespace MvcRecordStore.Controllers
             var record = await _context.Records
                 .Include(r => r.Artist)
                 .Include(r => r.Label)
+                .Include(r => r.Prices)
                 .FirstOrDefaultAsync(m => m.ID == id);
             if (record == null)
             {
                 return NotFound();
             }
 
-            return View(record);
+            var recordVM = new RecordDetailsVM()
+            {
+                ID = record.ID,
+                Name = record.Name,
+                Type = record.Type,
+                ReleaseDate = record.ReleaseDate,
+                Prices = record.Prices,
+                Artist = record.Artist,
+                ArtistID = record.ArtistID,
+                Label = record.Label,
+                LabelID = record.LabelID,
+                Genres = record.Genres
+            };
+
+            return View(recordVM);
+        }
+
+        [Authorize]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Details(int id, [Bind("Input")] RecordDetailsVM recordVM)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            var record = await _context.Records.FirstOrDefaultAsync(m => m.ID == id);
+            var selectedFormatPrice = JsonSerializer.Deserialize<Dictionary<string, double>>(recordVM.Input);
+            var recordPrice = new RecordPrice(); // finding the RecordPrice object
+            foreach (var item in selectedFormatPrice)
+            {
+                recordPrice = _context.RecordPrices
+                .Include(r => r.Record)
+                .FirstOrDefault(r => r.RecordID == id && r.Format == item.Key && r.Price == item.Value);
+                Console.WriteLine($"FormatPrice Post = Key: {item.Key}, Value: {item.Value}");
+            }
+
+            if (record == null)
+            {
+                return NotFound();
+            }
+
+            if ((user == null) || (record == null))
+            {
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (_context.CartItems.Any(c => c.ProductID == recordPrice.ID && c.Buyer == user))
+            {
+                var cartItem = await _context.CartItems.FirstOrDefaultAsync(c => c.Buyer == user); // Check for stock
+
+                if ((cartItem.Quantity + 1) > recordPrice.Stock)
+                {
+                    return RedirectToAction("Details", new { id = record.ID });
+                }
+                else
+                {
+                    cartItem.Quantity++;
+                }
+
+                _context.Update(cartItem);
+                await _context.SaveChangesAsync();
+            }
+            else if (recordPrice.Stock > 0)
+            {
+                var cart = new CartItem()
+                {
+                    Buyer = user,
+                    BuyerID = user.Id,
+                    Product = recordPrice,
+                    ProductID = recordPrice.ID,
+                    Quantity = 1
+                };
+
+                _context.Add(cart);
+                await _context.SaveChangesAsync();
+            }
+            return RedirectToAction("Details", new { id = record.ID });
         }
 
         // GET: Records/Create
@@ -61,7 +141,7 @@ namespace MvcRecordStore.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("ID,Name,Type,ReleaseDate,ArtistID,LabelID,SelectedGenres")] RecordCreateVM recordVM)
+        public async Task<IActionResult> Create([Bind("ID,Name,Type,ReleaseDate,FormatPrices,ArtistID,LabelID,SelectedGenres")] RecordCreateVM recordVM)
         {
             var genres = _context.Genres
             .Where(g => recordVM.SelectedGenres.Contains(g.ID))
@@ -78,11 +158,12 @@ namespace MvcRecordStore.Controllers
 
             if (ModelState.IsValid)
             {
+                Console.WriteLine($"Formats: {recordVM.FormatPrices}");
                 var record = new Record
                 {
                     Name = recordVM.Name,
                     ReleaseDate = recordVM.ReleaseDate,
-                    Type = (RecordType)recordVM.Type,
+                    Type = (Models.RecordType)recordVM.Type,
                     Artist = artist,
                     ArtistID = artist.ID,
                     Label = label,
@@ -90,7 +171,25 @@ namespace MvcRecordStore.Controllers
                     Genres = genres
                 };
                 _context.Add(record);
+
+                if ((recordVM != null) && (recordVM.FormatPrices != null))
+                {
+                    foreach (var formatPrice in recordVM.FormatPrices)
+                    {
+                        var format = new RecordPrice
+                        {
+                            Format = formatPrice.Format,
+                            Price = (double)formatPrice.Price,
+                            Stock = (int)formatPrice.Stock,
+                            Record = record,
+                            RecordID = record.ID
+                        };
+                        _context.Add(format);
+                        record.Prices.Add(format);
+                    }
+                }
                 await _context.SaveChangesAsync();
+
                 return RedirectToAction(nameof(Index));
             }
 
@@ -119,10 +218,12 @@ namespace MvcRecordStore.Controllers
             }
 
             var selectedGenres = new List<int>();
-            foreach(var genre in record.Genres)
+            foreach (var genre in record.Genres)
             {
                 selectedGenres.Add(genre.ID);
             }
+
+            var formatPrices = await _context.RecordPrices.Where(p => p.RecordID == id).ToListAsync();
 
             var recordVM = new RecordCreateVM
             {
@@ -132,8 +233,18 @@ namespace MvcRecordStore.Controllers
                 ReleaseDate = record.ReleaseDate,
                 ArtistID = record.ArtistID,
                 LabelID = record.Label.ID,
-                SelectedGenres = selectedGenres
+                SelectedGenres = selectedGenres,
+                FormatPrices = new List<FormatPriceVM>()
             };
+
+            foreach (var item in formatPrices)
+            {
+                var formatPricesVM = new FormatPriceVM();
+                formatPricesVM.Format = item.Format;
+                formatPricesVM.Price = item.Price;
+                formatPricesVM.Stock = item.Stock;
+                recordVM.FormatPrices.Add(formatPricesVM);
+            }
 
             ViewBag.Artists = _context.Artists.ToList();
             ViewBag.Labels = _context.Labels.ToList();
@@ -146,7 +257,7 @@ namespace MvcRecordStore.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("ID,Name,Type,ReleaseDate,ArtistID,LabelID,SelectedGenres")] RecordCreateVM recordVM)
+        public async Task<IActionResult> Edit(int id, [Bind("ID,Name,Type,ReleaseDate,FormatPrices,ArtistID,LabelID,SelectedGenres")] RecordCreateVM recordVM)
         {
             if (id != recordVM.ID)
             {
@@ -166,17 +277,46 @@ namespace MvcRecordStore.Controllers
                 var record = await _context.Records
                 .Include(r => r.Artist)
                 .Include(r => r.Label)
+                .Include(r => r.Prices)
                 .Include(r => r.Genres)
                 .FirstOrDefaultAsync(r => r.ID == id);
 
                 record.Name = recordVM.Name;
-                record.Type = (RecordType)recordVM.Type;
+                record.Type = (Models.RecordType)recordVM.Type;
                 record.ReleaseDate = recordVM.ReleaseDate;
                 record.Artist = artist;
                 record.ArtistID = artist.ID;
                 record.Label = label;
                 record.LabelID = label.ID;
                 record.Genres = genres;
+
+                if ((recordVM != null) && (recordVM.FormatPrices != null))
+                {
+                    if (record.Prices != null)
+                    {
+                        foreach (var price in record.Prices)
+                        {
+                            _context.Remove(price);
+                        }
+                    }
+
+                    foreach (var formatPrice in recordVM.FormatPrices)
+                    {
+                        if ((formatPrice.Format != null) && (formatPrice.Price != null) && (formatPrice.Stock != null))
+                        {
+                            var format = new RecordPrice
+                            {
+                                Format = formatPrice.Format,
+                                Price = (double)formatPrice.Price,
+                                Stock = (int)formatPrice.Stock,
+                                Record = record,
+                                RecordID = record.ID
+                            };
+                            _context.Add(format);
+                            record.Prices.Add(format);
+                        }
+                    }
+                }
 
                 try
                 {

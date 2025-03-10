@@ -1,14 +1,15 @@
+// filepath: /d:/Dev/Backend/ASP.Net Core/MvcRecordStore/MvcRecordStore/ViewComponents/FormatPriceVC.cs
 using Microsoft.AspNetCore.Mvc;
 using MvcRecordStore.Models.ViewModels;
 
-namespace MvcRecordStore.ViewComponents;
-
-public class FormatPriceVC : ViewComponent
+namespace MvcRecordStore.ViewComponents
 {
-    public IViewComponentResult Invoke(int index)
+    public class FormatPriceVC : ViewComponent
     {
-        var model = new FormatPriceVM();
-        ViewBag.Index = index;
-        return View(model);
+        public IViewComponentResult Invoke(int index, FormatPriceVM formatPrice)
+        {
+            ViewBag.Index = index;
+            return View(formatPrice);
+        }
     }
 }

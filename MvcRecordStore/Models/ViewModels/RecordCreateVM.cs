@@ -28,6 +28,8 @@ public class RecordCreateVM
     [DisplayFormat(DataFormatString = "{0:yyyy-MM-dd}", ApplyFormatInEditMode = true)]
     public DateTime ReleaseDate { get; set; }
 
+    public List<FormatPriceVM>? FormatPrices { get; set; }
+
     public int ArtistID { get; set; }
 
     public int LabelID { get; set; }
