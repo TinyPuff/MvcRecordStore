@@ -8,22 +8,25 @@ using Microsoft.EntityFrameworkCore;
 using MvcRecordStore.Data;
 using MvcRecordStore.Models;
 using MvcRecordStore.Models.ViewModels;
+using MvcRecordStore.Services;
 
 namespace MvcRecordStore.Controllers
 {
     public class LabelsController : Controller
     {
         private readonly StoreDbContext _context;
+        private readonly ILabelService _labelService;
 
-        public LabelsController(StoreDbContext context)
+        public LabelsController(StoreDbContext context, ILabelService labelService)
         {
             _context = context;
+            _labelService = labelService;
         }
 
         // GET: Labels
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Labels.ToListAsync());
+            return View(_labelService.GetAllLabels());
         }
 
         // GET: Labels/Details/5
@@ -34,8 +37,7 @@ namespace MvcRecordStore.Controllers
                 return NotFound();
             }
 
-            var label = await _context.Labels
-                .FirstOrDefaultAsync(m => m.ID == id);
+            var label = await _labelService.GetLabelWithDependencies((int)id);
             if (label == null)
             {
                 return NotFound();
@@ -57,18 +59,15 @@ namespace MvcRecordStore.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("ID,Name,Country")] LabelCreateVM labelVM)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                var label = new Label
-                {
-                    Name = labelVM.Name,
-                    Country = labelVM.Country
-                };
-                _context.Add(label);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                return View(labelVM);
             }
-            return View(labelVM);
+
+            var label = _labelService.CreateNewLabel(labelVM);
+            _context.Add(label);
+            await _context.SaveChangesAsync();
+            return RedirectToAction(nameof(Index));
         }
 
         // GET: Labels/Edit/5
@@ -79,18 +78,13 @@ namespace MvcRecordStore.Controllers
                 return NotFound();
             }
 
-            var label = await _context.Labels.FindAsync(id);
+            var label = await _labelService.GetLabelWithDependencies((int)id);
             if (label == null)
             {
                 return NotFound();
             }
             
-            var labelVM = new LabelCreateVM
-            {
-                ID = label.ID,
-                Name = label.Name,
-                Country = label.Country
-            };
+            var labelVM = _labelService.GetLabelViewModelToEdit(label);
 
             return View(labelVM);
         }
@@ -107,31 +101,29 @@ namespace MvcRecordStore.Controllers
                 return NotFound();
             }
 
-            if (ModelState.IsValid)
+            if(!ModelState.IsValid)
             {
-                var label = await _context.Labels.FindAsync(id);
-                label.Name = labelVM.Name;
-                label.Country = labelVM.Country;
-
-                try
-                {
-                    _context.Update(label);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!LabelExists(label.ID))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction("Edit", new { id = labelVM.ID });
             }
-            return RedirectToAction("Edit", new { id = labelVM.ID });;
+
+            var label = await _labelService.GetLabelWithDependencies(id);
+            try
+            {
+                _context.Update(label);
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!_labelService.LabelExists(label.ID))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
+            return RedirectToAction(nameof(Index));
         }
 
         // GET: Labels/Delete/5
@@ -142,8 +134,7 @@ namespace MvcRecordStore.Controllers
                 return NotFound();
             }
 
-            var label = await _context.Labels
-                .FirstOrDefaultAsync(m => m.ID == id);
+            var label = await _labelService.GetLabelWithoutDependencies((int)id);
             if (label == null)
             {
                 return NotFound();
@@ -157,7 +148,7 @@ namespace MvcRecordStore.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var label = await _context.Labels.FindAsync(id);
+            var label = await _labelService.GetLabelWithoutDependencies((int)id);
             if (label != null)
             {
                 _context.Labels.Remove(label);
@@ -165,11 +156,6 @@ namespace MvcRecordStore.Controllers
 
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool LabelExists(int id)
-        {
-            return _context.Labels.Any(e => e.ID == id);
         }
     }
 }

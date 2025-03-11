@@ -8,22 +8,25 @@ using Microsoft.EntityFrameworkCore;
 using MvcRecordStore.Data;
 using MvcRecordStore.Models;
 using MvcRecordStore.Models.ViewModels;
+using MvcRecordStore.Services;
 
 namespace MvcRecordStore.Controllers
 {
     public class GenresController : Controller
     {
         private readonly StoreDbContext _context;
+        private readonly IGenreService _genreService;
 
-        public GenresController(StoreDbContext context)
+        public GenresController(StoreDbContext context, IGenreService genreService)
         {
             _context = context;
+            _genreService = genreService;
         }
 
         // GET: Genres
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Genres.ToListAsync());
+            return View(_genreService.GetAllGenres());
         }
 
         // GET: Genres/Details/5
@@ -34,8 +37,7 @@ namespace MvcRecordStore.Controllers
                 return NotFound();
             }
 
-            var genre = await _context.Genres
-                .FirstOrDefaultAsync(m => m.ID == id);
+            var genre = await _genreService.GetGenreWithDependencies((int)id);
             if (genre == null)
             {
                 return NotFound();
@@ -57,17 +59,15 @@ namespace MvcRecordStore.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("ID,Name")] GenreCreateVM genreVM)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                var genre = new Genre
-                {
-                    Name = genreVM.Name
-                };
-                _context.Add(genre);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                return View(genreVM);
             }
-            return View(genreVM);
+
+            var genre = _genreService.CreateNewGenre(genreVM);
+            _context.Add(genre);
+            await _context.SaveChangesAsync();
+            return RedirectToAction(nameof(Index));
         }
 
         // GET: Genres/Edit/5
@@ -78,17 +78,13 @@ namespace MvcRecordStore.Controllers
                 return NotFound();
             }
 
-            var genre = await _context.Genres.FindAsync(id);
+            var genre = await _genreService.GetGenreWithDependencies((int)id);
             if (genre == null)
             {
                 return NotFound();
             }
 
-            var genreVM = new GenreCreateVM
-            {
-                ID = genre.ID,
-                Name = genre.Name
-            };
+            var genreVM = _genreService.GetGenreViewModelToEdit(genre);
             return View(genreVM);
         }
 
@@ -104,30 +100,31 @@ namespace MvcRecordStore.Controllers
                 return NotFound();
             }
 
-            if (ModelState.IsValid)
+            if(!ModelState.IsValid)
             {
-                var genre = await _context.Genres.FindAsync(id);
-                genre.Name = genreVM.Name;
-
-                try
-                {
-                    _context.Update(genre);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!GenreExists(genre.ID))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction("Edit", new { id = genreVM.ID });;
             }
-            return RedirectToAction("Edit", new { id = genreVM.ID });;
+
+            var genre = await _genreService.GetGenreWithoutDependencies(id);
+            _genreService.UpdateGenreProperties(genre, genreVM);
+
+            try
+            {
+                _context.Update(genre);
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!_genreService.GenreExists(genre.ID))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
+            return RedirectToAction(nameof(Index));
         }
 
         // GET: Genres/Delete/5
@@ -138,8 +135,7 @@ namespace MvcRecordStore.Controllers
                 return NotFound();
             }
 
-            var genre = await _context.Genres
-                .FirstOrDefaultAsync(m => m.ID == id);
+            var genre = await _genreService.GetGenreWithoutDependencies((int)id);
             if (genre == null)
             {
                 return NotFound();
@@ -153,7 +149,7 @@ namespace MvcRecordStore.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var genre = await _context.Genres.FindAsync(id);
+            var genre = await _genreService.GetGenreWithoutDependencies(id);
             if (genre != null)
             {
                 _context.Genres.Remove(genre);
@@ -161,11 +157,6 @@ namespace MvcRecordStore.Controllers
 
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool GenreExists(int id)
-        {
-            return _context.Genres.Any(e => e.ID == id);
         }
     }
 }

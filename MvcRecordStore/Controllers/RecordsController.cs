@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Humanizer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -11,24 +12,27 @@ using Microsoft.EntityFrameworkCore;
 using MvcRecordStore.Data;
 using MvcRecordStore.Models;
 using MvcRecordStore.Models.ViewModels;
+using MvcRecordStore.Services;
 
 namespace MvcRecordStore.Controllers
 {
     public class RecordsController : Controller
     {
         private readonly StoreDbContext _context;
+        private readonly IRecordService _recordService;
         private readonly UserManager<StoreUser> _userManager;
 
-        public RecordsController(StoreDbContext context, UserManager<StoreUser> userManager)
+        public RecordsController(StoreDbContext context, IRecordService recordService, UserManager<StoreUser> userManager)
         {
             _context = context;
+            _recordService = recordService;
             _userManager = userManager;
         }
 
         // GET: Records
         public async Task<IActionResult> Index()
         {
-            var storeDbContext = _context.Records.Include(r => r.Artist).Include(r => r.Label);
+            var storeDbContext = _recordService.GetAllRecords();
             return View(await storeDbContext.ToListAsync());
         }
 
@@ -40,30 +44,13 @@ namespace MvcRecordStore.Controllers
                 return NotFound();
             }
 
-            var record = await _context.Records
-                .Include(r => r.Artist)
-                .Include(r => r.Label)
-                .Include(r => r.Prices)
-                .FirstOrDefaultAsync(m => m.ID == id);
+            var record = await _recordService.GetRecordWithDependencies((int)id);
             if (record == null)
             {
                 return NotFound();
             }
 
-            var recordVM = new RecordDetailsVM()
-            {
-                ID = record.ID,
-                Name = record.Name,
-                Type = record.Type,
-                ReleaseDate = record.ReleaseDate,
-                Prices = record.Prices,
-                Artist = record.Artist,
-                ArtistID = record.ArtistID,
-                Label = record.Label,
-                LabelID = record.LabelID,
-                Genres = record.Genres
-            };
-
+            var recordVM = await _recordService.GetRecordViewModelDetails(record, (int)id);
             return View(recordVM);
         }
 
@@ -73,66 +60,26 @@ namespace MvcRecordStore.Controllers
         public async Task<IActionResult> Details(int id, [Bind("Input")] RecordDetailsVM recordVM)
         {
             var user = await _userManager.GetUserAsync(User);
-            var record = await _context.Records.FirstOrDefaultAsync(m => m.ID == id);
-            var selectedFormatPrice = JsonSerializer.Deserialize<Dictionary<string, double>>(recordVM.Input);
-            var recordPrice = new RecordPrice(); // finding the RecordPrice object
-            foreach (var item in selectedFormatPrice)
-            {
-                recordPrice = _context.RecordPrices
-                .Include(r => r.Record)
-                .FirstOrDefault(r => r.RecordID == id && r.Format == item.Key && r.Price == item.Value);
-                Console.WriteLine($"FormatPrice Post = Key: {item.Key}, Value: {item.Value}");
-            }
-
+            var record = await _recordService.GetRecordWithoutDependencies(id);
             if (record == null)
             {
                 return NotFound();
             }
 
-            if ((user == null) || (record == null))
+            var recordPrice = await _recordService.GetSelectedFormat(recordVM, id);
+            if (await _recordService.AddRecordToCart(recordPrice, user))
             {
                 return RedirectToAction(nameof(Index));
             }
-
-            if (_context.CartItems.Any(c => c.ProductID == recordPrice.ID && c.Buyer == user))
-            {
-                var cartItem = await _context.CartItems.FirstOrDefaultAsync(c => c.Buyer == user); // Check for stock
-
-                if ((cartItem.Quantity + 1) > recordPrice.Stock)
-                {
-                    return RedirectToAction("Details", new { id = record.ID });
-                }
-                else
-                {
-                    cartItem.Quantity++;
-                }
-
-                _context.Update(cartItem);
-                await _context.SaveChangesAsync();
+            else{
+                return RedirectToAction("Details", new { id = record.ID });
             }
-            else if (recordPrice.Stock > 0)
-            {
-                var cart = new CartItem()
-                {
-                    Buyer = user,
-                    BuyerID = user.Id,
-                    Product = recordPrice,
-                    ProductID = recordPrice.ID,
-                    Quantity = 1
-                };
-
-                _context.Add(cart);
-                await _context.SaveChangesAsync();
-            }
-            return RedirectToAction("Details", new { id = record.ID });
         }
 
         // GET: Records/Create
         public IActionResult Create()
         {
-            ViewBag.Artists = _context.Artists.ToList();
-            ViewBag.Labels = _context.Labels.ToList();
-            ViewBag.Genres = _context.Genres.ToList();
+            PopulateViewData();
             return View();
         }
 
@@ -142,61 +89,20 @@ namespace MvcRecordStore.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("ID,Name,Type,ReleaseDate,FormatPrices,ArtistID,LabelID,SelectedGenres")] RecordCreateVM recordVM)
-        {
-            var genres = _context.Genres
-            .Where(g => recordVM.SelectedGenres.Contains(g.ID))
-            .ToList();
-
-            var label = await _context.Labels.FirstOrDefaultAsync(l => l.ID == recordVM.LabelID);
-
-            var artist = await _context.Artists.FirstOrDefaultAsync(l => l.ID == recordVM.ArtistID);
-
-            foreach (var error in ModelState.Values.SelectMany(v => v.Errors))
+        {   
+            if (!ModelState.IsValid)
             {
-                Console.WriteLine(error.ErrorMessage);
+                PopulateViewData();
+                return View(recordVM);
             }
 
-            if (ModelState.IsValid)
-            {
-                Console.WriteLine($"Formats: {recordVM.FormatPrices}");
-                var record = new Record
-                {
-                    Name = recordVM.Name,
-                    ReleaseDate = recordVM.ReleaseDate,
-                    Type = (Models.RecordType)recordVM.Type,
-                    Artist = artist,
-                    ArtistID = artist.ID,
-                    Label = label,
-                    LabelID = label.ID,
-                    Genres = genres
-                };
-                _context.Add(record);
+            var record = await _recordService.CreateNewRecord(recordVM);
+            _context.Add(record);
 
-                if ((recordVM != null) && (recordVM.FormatPrices != null))
-                {
-                    foreach (var formatPrice in recordVM.FormatPrices)
-                    {
-                        var format = new RecordPrice
-                        {
-                            Format = formatPrice.Format,
-                            Price = (double)formatPrice.Price,
-                            Stock = (int)formatPrice.Stock,
-                            Record = record,
-                            RecordID = record.ID
-                        };
-                        _context.Add(format);
-                        record.Prices.Add(format);
-                    }
-                }
-                await _context.SaveChangesAsync();
+            _recordService.UpdateRecordPrices(record, recordVM);
+            await _context.SaveChangesAsync();
 
-                return RedirectToAction(nameof(Index));
-            }
-
-            ViewBag.Artists = _context.Artists.ToList();
-            ViewBag.Labels = _context.Labels.ToList();
-            ViewBag.Genres = _context.Genres.ToList();
-            return View(recordVM);
+            return RedirectToAction(nameof(Index));
         }
 
         // GET: Records/Edit/5
@@ -206,49 +112,16 @@ namespace MvcRecordStore.Controllers
             {
                 return NotFound();
             }
-
-            var record = await _context.Records
-            .Include(r => r.Artist)
-            .Include(r => r.Label)
-            .Include(r => r.Genres)
-            .FirstOrDefaultAsync(r => r.ID == id);
+            
+            var record = await _recordService.GetRecordWithDependencies((int)id);
             if (record == null)
             {
                 return NotFound();
             }
 
-            var selectedGenres = new List<int>();
-            foreach (var genre in record.Genres)
-            {
-                selectedGenres.Add(genre.ID);
-            }
+            var recordVM = await _recordService.GetRecordViewModelToEdit(record, (int)id);
 
-            var formatPrices = await _context.RecordPrices.Where(p => p.RecordID == id).ToListAsync();
-
-            var recordVM = new RecordCreateVM
-            {
-                ID = record.ID,
-                Name = record.Name,
-                Type = (int)record.Type,
-                ReleaseDate = record.ReleaseDate,
-                ArtistID = record.ArtistID,
-                LabelID = record.Label.ID,
-                SelectedGenres = selectedGenres,
-                FormatPrices = new List<FormatPriceVM>()
-            };
-
-            foreach (var item in formatPrices)
-            {
-                var formatPricesVM = new FormatPriceVM();
-                formatPricesVM.Format = item.Format;
-                formatPricesVM.Price = item.Price;
-                formatPricesVM.Stock = item.Stock;
-                recordVM.FormatPrices.Add(formatPricesVM);
-            }
-
-            ViewBag.Artists = _context.Artists.ToList();
-            ViewBag.Labels = _context.Labels.ToList();
-            ViewBag.Genres = _context.Genres.ToList();
+            PopulateViewData();
             return View(recordVM);
         }
 
@@ -264,82 +137,42 @@ namespace MvcRecordStore.Controllers
                 return NotFound();
             }
 
-            var genres = _context.Genres
-            .Where(g => recordVM.SelectedGenres.Contains(g.ID))
-            .ToList();
-
-            var label = await _context.Labels.FirstOrDefaultAsync(l => l.ID == recordVM.LabelID);
-
-            var artist = await _context.Artists.FirstOrDefaultAsync(l => l.ID == recordVM.ArtistID);
-
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                var record = await _context.Records
-                .Include(r => r.Artist)
-                .Include(r => r.Label)
-                .Include(r => r.Prices)
-                .Include(r => r.Genres)
-                .FirstOrDefaultAsync(r => r.ID == id);
-
-                record.Name = recordVM.Name;
-                record.Type = (Models.RecordType)recordVM.Type;
-                record.ReleaseDate = recordVM.ReleaseDate;
-                record.Artist = artist;
-                record.ArtistID = artist.ID;
-                record.Label = label;
-                record.LabelID = label.ID;
-                record.Genres = genres;
-
-                if ((recordVM != null) && (recordVM.FormatPrices != null))
-                {
-                    if (record.Prices != null)
-                    {
-                        foreach (var price in record.Prices)
-                        {
-                            _context.Remove(price);
-                        }
-                    }
-
-                    foreach (var formatPrice in recordVM.FormatPrices)
-                    {
-                        if ((formatPrice.Format != null) && (formatPrice.Price != null) && (formatPrice.Stock != null))
-                        {
-                            var format = new RecordPrice
-                            {
-                                Format = formatPrice.Format,
-                                Price = (double)formatPrice.Price,
-                                Stock = (int)formatPrice.Stock,
-                                Record = record,
-                                RecordID = record.ID
-                            };
-                            _context.Add(format);
-                            record.Prices.Add(format);
-                        }
-                    }
-                }
-
-                try
-                {
-                    _context.Update(record);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!RecordExists(record.ID))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction("Edit", new { id = recordVM.ID });
             }
-            ViewBag.Artists = _context.Artists.ToList();
-            ViewBag.Labels = _context.Labels.ToList();
-            ViewBag.Genres = _context.Genres.ToList();
-            return RedirectToAction("Edit", new { id = recordVM.ID });
+
+            var record = await _recordService.GetRecordWithDependencies(id);
+            if (record == null)
+            {
+                return NotFound();
+            }
+
+            _recordService.UpdateRecordProperties(record, recordVM);
+
+            if (recordVM.FormatPrices != null)
+            {
+                _recordService.UpdateRecordPrices(record, recordVM);
+            }
+
+            try
+            {
+                _context.Update(record);
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!_recordService.RecordExists(record.ID))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
+            return RedirectToAction(nameof(Index));
         }
 
         // GET: Records/Delete/5
@@ -350,10 +183,7 @@ namespace MvcRecordStore.Controllers
                 return NotFound();
             }
 
-            var record = await _context.Records
-                .Include(r => r.Artist)
-                .Include(r => r.Label)
-                .FirstOrDefaultAsync(m => m.ID == id);
+            var record = await _recordService.GetRecordWithDependencies((int)id);
             if (record == null)
             {
                 return NotFound();
@@ -367,7 +197,7 @@ namespace MvcRecordStore.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var record = await _context.Records.FindAsync(id);
+            var record = await _recordService.GetRecordWithoutDependencies(id);
             if (record != null)
             {
                 _context.Records.Remove(record);
@@ -376,10 +206,15 @@ namespace MvcRecordStore.Controllers
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
-
-        private bool RecordExists(int id)
+        
+        /// <summary>
+        /// Populates the view data for dropdown lists.
+        /// </summary>
+        public void PopulateViewData()
         {
-            return _context.Records.Any(e => e.ID == id);
+            ViewBag.Artists = _context.Artists.ToList();
+            ViewBag.Labels = _context.Labels.ToList();
+            ViewBag.Genres = _context.Genres.ToList();
         }
     }
 }
