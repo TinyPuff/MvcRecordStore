@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using MvcRecordStore.Data;
+using MvcRecordStore.Extensions;
+
 var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("StoreDbContextConnection") ?? throw new InvalidOperationException("Connection string 'StoreDbContextConnection' not found.");
 
@@ -9,6 +11,7 @@ builder.Services.AddDbContext<StoreDbContext>(options => options.UseSqlServer(co
 builder.Services.AddDefaultIdentity<StoreUser>(options => options.SignIn.RequireConfirmedAccount = true).AddEntityFrameworkStores<StoreDbContext>();
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddCustomServices();
 
 var app = builder.Build();
 
