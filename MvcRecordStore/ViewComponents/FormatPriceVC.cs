@@ -6,10 +6,16 @@ namespace MvcRecordStore.ViewComponents
 {
     public class FormatPriceVC : ViewComponent
     {
-        public IViewComponentResult Invoke(int index, FormatPriceVM formatPrice)
+        public IViewComponentResult Invoke(int index, FormatPriceVM? formatPrice)
         {
             ViewBag.Index = index;
-            return View(formatPrice);
+            if (formatPrice != null)
+            {   
+                return View(formatPrice);
+            }
+
+            var model = new FormatPriceVM();
+            return View(model);
         }
     }
 }
