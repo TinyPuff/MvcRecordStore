@@ -1,0 +1,50 @@
+@model IEnumerable<MvcRecordStore.Models.CartItem>
+@{
+    ViewData["Title"] = "Shopping Cart";
+}
+
+<h3>Shopping Cart</h3>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                Product
+            </th>
+            <th>
+                Price
+            </th>
+            <th>
+                Quantity
+            </th>
+            <th>
+                Actions
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var item in Model) 
+    {
+        <tr>
+            <td>
+                @item.Product.Record.Artist.Name - @item.Product.Record.Name (@item.Product.Format)
+            </td>
+            <td>
+                $@item.Product.Price
+            </td>
+            <td>
+                @item.Quantity
+            </td>
+            <td>
+                <a asp-action="Delete" asp-route-id="@item.ID">Delete</a>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+<form asp-action="Payment">
+<div class="form-group">
+    <input type="submit" value="Finalize Payment" class="btn btn-primary" />
+</div>
+</form>

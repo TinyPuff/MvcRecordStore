@@ -1,0 +1,39 @@
+@model MvcRecordStore.Models.Order
+
+@{
+    ViewData["Title"] = "Details";
+}
+
+<h1>Details</h1>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                Product
+            </th>
+            <th>
+                Price
+            </th>
+            <th>
+                Quantity
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.Products)
+        {
+            <tr>
+                <td>
+                    @item.Product.Record.Artist.Name - @item.Product.Record.Name (@item.Product.Format)
+                </td>
+                <td>
+                    $@item.Product.Price
+                </td>
+                <td>
+                    @item.Quantity
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

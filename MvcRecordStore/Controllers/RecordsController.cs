@@ -54,6 +54,7 @@ namespace MvcRecordStore.Controllers
             return View(recordVM);
         }
 
+        // POST: Records/Details/5
         [Authorize]
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -67,11 +68,16 @@ namespace MvcRecordStore.Controllers
             }
 
             var recordPrice = await _recordService.GetSelectedFormat(recordVM, id);
-            if (await _recordService.AddRecordToCart(recordPrice, user))
+            if (await _recordService.AddRecordToCart(recordPrice, user)) // Redirects to shopping cart in case of success
             {
-                return RedirectToAction(nameof(Index));
+                return RedirectToRoute(new
+                {
+                    controller = "Cart",
+                    action = "Index"
+                });
             }
-            else{
+            else
+            {
                 return RedirectToAction("Details", new { id = record.ID });
             }
         }
@@ -89,7 +95,7 @@ namespace MvcRecordStore.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("ID,Name,Type,ReleaseDate,FormatPrices,ArtistID,LabelID,SelectedGenres")] RecordCreateVM recordVM)
-        {   
+        {
             if (!ModelState.IsValid)
             {
                 PopulateViewData();
@@ -112,7 +118,7 @@ namespace MvcRecordStore.Controllers
             {
                 return NotFound();
             }
-            
+
             var record = await _recordService.GetRecordWithDependencies((int)id);
             if (record == null)
             {
@@ -206,7 +212,7 @@ namespace MvcRecordStore.Controllers
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
-        
+
         /// <summary>
         /// Populates the view data for dropdown lists.
         /// </summary>

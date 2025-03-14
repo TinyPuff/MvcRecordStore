@@ -1,0 +1,62 @@
+@model IEnumerable<MvcRecordStore.Models.Order>
+@{
+    ViewData["Title"] = "Your Orders";
+}
+
+<h3>Orders</h3>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                Date & Time
+            </th>
+            <th>
+                Gateway
+            </th>
+            <th>
+                Status
+            </th>
+            <th>
+                Total Price
+            </th>
+            <th>
+                Tracking Number
+            </th>
+            <th>
+                Transaction Code
+            </th>
+            <th>
+                Products
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model) 
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Invoice.PaymentDateTime)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Invoice.GatewayName)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Invoice.Status)
+                </td>
+                <td>
+                    $@Html.DisplayFor(modelItem => item.Invoice.TotalPrice)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Invoice.TrackingNumber)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Invoice.TransactionCode)
+                </td>
+                <td>
+                    <a asp-action="Details" asp-route-id="@item.ID">View Details</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
