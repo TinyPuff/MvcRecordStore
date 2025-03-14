@@ -8,14 +8,11 @@ public class Order
 {
     public int ID { get; set; }
 
-    public int? TrackingNumber { get; set; }
+    public Invoice Invoice { get; set; }
 
-    [ForeignKey(nameof(BuyerID))]
-    public StoreUser Buyer { get; set; }
+    public int InvoiceID { get; set; }
 
-    public string BuyerID { get; set; }
+    public string? Status { get; set; }
 
-    public double TotalPrice { get; set; } = 0.00;
-
-    public ICollection<CartItem> CartItems { get; set; }
+    public ICollection<CartItem> Products { get; set; }
 }

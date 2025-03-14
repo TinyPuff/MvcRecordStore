@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MvcRecordStore.Data;
 
@@ -11,9 +12,11 @@ using MvcRecordStore.Data;
 namespace MvcRecordStore.Migrations
 {
     [DbContext(typeof(StoreDbContext))]
-    partial class StoreDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250313223255_AddedInvoiceModelAndUpdatedOrder")]
+    partial class AddedInvoiceModelAndUpdatedOrder
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -356,12 +359,15 @@ namespace MvcRecordStore.Migrations
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("GatewayAccountName")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("GatewayName")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("GatewayResponseCode")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsSucceed")
@@ -370,9 +376,6 @@ namespace MvcRecordStore.Migrations
                     b.Property<string>("Message")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("PaymentDateTime")
-                        .HasColumnType("datetime2");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -385,6 +388,7 @@ namespace MvcRecordStore.Migrations
                         .HasColumnType("bigint");
 
                     b.Property<string>("TransactionCode")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("ID");
