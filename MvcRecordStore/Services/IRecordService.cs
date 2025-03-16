@@ -9,6 +9,7 @@ namespace MvcRecordStore.Services;
 public interface IRecordService
 {
     IQueryable<Record> GetAllRecords();
+    IQueryable<HomeVM> GetHomePageViewModel(int amount);
     Task<Record> GetRecordWithDependencies(int id);
     Task<Record> GetRecordWithoutDependencies(int id);
     Task<Artist> GetSelectedArtist(RecordCreateVM recordVM);

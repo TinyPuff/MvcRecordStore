@@ -24,7 +24,43 @@ public class RecordService : IRecordService
     /// <returns></returns>
     public IQueryable<Record> GetAllRecords()
     {
-        return _context.Records.Include(r => r.Artist).Include(r => r.Label);
+        return _context.Records
+            .Include(r => r.Artist)
+            .Include(r => r.Label)
+            .Include(r => r.Genres)
+            .Include(r => r.Prices);
+    }
+
+    /// <summary>
+    /// Retrieves a specified number of records and maps them to the HomeVM view model.
+    /// </summary>
+    /// <param name="amount">The number of records to retrieve.</param>
+    /// <returns>An IQueryable of HomeVM objects.</returns>
+    public IQueryable<HomeVM> GetHomePageViewModel(int amount)
+    {
+        var recordsVM = new List<HomeVM>();
+        foreach (var record in GetAllRecords().Take(amount))
+        {
+            var recordVM = new HomeVM()
+            {
+                ID = record.ID,
+                Name = record.Name,
+                ArtistName = record.Artist.Name,
+                LabelName = record.Label.Name,
+                Prices = new List<RecordPrice>()
+            };
+            
+            foreach (var price in record.Prices)
+            {
+                if (price.Stock > 0)
+                {
+                    recordVM.Prices.Add(price);
+                }
+            }
+            recordsVM.Add(recordVM);
+        }
+
+        return recordsVM.AsQueryable();
     }
 
     /// <summary>

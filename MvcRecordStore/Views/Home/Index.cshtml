@@ -1,8 +1,37 @@
-﻿@{
+﻿@model IEnumerable<MvcRecordStore.Models.ViewModels.HomeVM>
+
+@{
     ViewData["Title"] = "Home Page";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="jumbotron text-center bg-dark text-white border rounded">
+    <h1 class="display-4">Welcome to the MVC Record Store!</h1>
+    <p class="lead">Discover and purchase your favorite records.</p>
+    <a class="btn btn-primary btn-lg mb-2" asp-controller="Records" asp-action="Index" role="button">Browse Records</a>
+</div>
+
+<h2 class="text-center">Featured Records</h2>
+<div class="row">
+    @foreach (var record in Model)
+    {
+        <div class="col-md-4">
+            <div class="card mb-4 shadow-sm">
+                <!-- <img class="card-img-top" src="@@record.ImageUrl" alt="@@record.Title"> -->
+                <div class="card-body">
+                    <h5 class="card-title"><i>@record.Name</i> by @record.ArtistName</h5>
+                    <p class="card-text">on @record.LabelName</p>
+                    @if (record.Prices != null)
+                    {
+                        var lowestPrice = record.Prices.OrderByDescending(p => p.Price).Last();
+                        <p class="card-text">@lowestPrice.Format: $@lowestPrice.Price (@lowestPrice.Stock left in stock) </p>
+                    }
+                    else
+                    {
+                        <p class="card-text">No formats in stock!</p>
+                    }
+                    <a href="@Url.Action("Details", "Records", new { id = record.ID })" class="btn btn-primary">View Details</a>
+                </div>
+            </div>
+        </div>
+    }
 </div>
