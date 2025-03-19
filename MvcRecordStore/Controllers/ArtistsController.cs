@@ -9,6 +9,7 @@ using MvcRecordStore.Data;
 using MvcRecordStore.Models;
 using MvcRecordStore.Models.ViewModels;
 using MvcRecordStore.Services;
+using Microsoft.Extensions.Configuration;
 
 namespace MvcRecordStore.Controllers
 {
@@ -16,35 +17,58 @@ namespace MvcRecordStore.Controllers
     {
         private readonly StoreDbContext _context;
         private readonly IArtistService _artistService;
+        private readonly IRecordService _recordService;
+        private readonly IConfiguration Configuration;
 
-        public ArtistsController(StoreDbContext context, IArtistService artistService)
+        public ArtistsController(StoreDbContext context, IArtistService artistService, IRecordService recordService, IConfiguration configuration)
         {
             _context = context;
             _artistService = artistService;
+            _recordService = recordService;
+            Configuration = configuration;
         }
 
         // GET: Artists
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string currentFilter, int sortOrder, int genreFilter, int pageIndex)
         {
-            var storeDbContext = _artistService.GetAllArtists();
-            return View(await storeDbContext.ToListAsync());
+            pageIndex = pageIndex >= 1 ? pageIndex : 1;
+            PopulateIndexViewData(currentFilter, sortOrder, genreFilter, pageIndex);
+            ViewBag.Genres = _context.Genres.ToList();
+            var pageSize = Configuration.GetValue("PageSize", 3);
+
+            var data = await _artistService.ApplyFilters(currentFilter, sortOrder, genreFilter);
+            ViewBag.TotalPages = Math.Ceiling(data.Count() / (double)pageSize);
+
+            return View(_artistService.ApplyPagination(data, pageIndex, pageSize));
         }
 
         // GET: Artists/Details/5
-        public async Task<IActionResult> Details(int? id)
+        public async Task<IActionResult> Details(int? id, string currentFilter, int sortOrder, int genreFilter, int pageIndex)
         {
+            pageIndex = pageIndex >= 1 ? pageIndex : 1;
+            PopulateIndexViewData(currentFilter, sortOrder, genreFilter, pageIndex);
+            ViewBag.Genres = _context.Genres.ToList();
             if (id == null)
             {
                 return NotFound();
             }
 
             var artist = await _artistService.GetArtistWithDependencies((int)id);
+            var artistRecords = await _recordService.ApplyFilters(artist.Records.AsQueryable(), currentFilter, sortOrder, genreFilter);
             if (artist == null)
             {
                 return NotFound();
             }
+            var pageSize = Configuration.GetValue("PageSize", 3);
 
-            return View(artist);
+            var artistVM = new ArtistDetailsVM
+            {
+                Artist = artist,
+                Records = _recordService.ApplyPagination(artistRecords, pageIndex, pageSize)
+            };
+            ViewBag.TotalPages = Math.Ceiling(artistRecords.Count() / (double)pageSize);
+
+            return View(artistVM);
         }
 
         // GET: Artists/Create
@@ -63,7 +87,7 @@ namespace MvcRecordStore.Controllers
         {
             if (ModelState.IsValid)
             {
-                var artist = _artistService.CreateNewArtist(artistVM);
+                var artist = await _artistService.CreateNewArtist(artistVM);
                 _context.Add(artist);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
@@ -161,6 +185,14 @@ namespace MvcRecordStore.Controllers
 
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
+        }
+
+        public void PopulateIndexViewData(string? currentFilter, int? sortOrder, int? genreFilter, int? pageIndex)
+        {
+            ViewData["PageIndex"] = pageIndex;
+            ViewData["CurrentFilter"] = currentFilter;
+            ViewData["SortOrder"] = sortOrder;
+            ViewData["GenreFilter"] = genreFilter;
         }
 
         public void PopulateViewData()

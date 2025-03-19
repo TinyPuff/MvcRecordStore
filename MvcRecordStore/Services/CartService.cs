@@ -46,6 +46,40 @@ public class CartService : ICartService
             .FirstOrDefaultAsync(c => c.ID == id);
     }
 
+    public async Task<List<CartItem>> ApplyFilters(IQueryable<CartItem> items, string? currentFilter, int? sortOrder)
+    {
+        if (!String.IsNullOrEmpty(currentFilter))
+        {
+            items = items.Where(r => r.Product.Record.Name.ToUpper().Contains(currentFilter.ToUpper())
+                || r.Product.Record.Artist.Name.ToUpper().Contains(currentFilter));
+        }
+
+        switch (sortOrder)
+        {
+            case 1:
+                items = items.OrderBy(i => i.Product.Record.Artist.Name);
+                break;
+            case 2:
+                items = items.OrderByDescending(i => i.Product.Record.Artist.Name);
+                break;
+            case 3:
+                items = items.OrderBy(i => i.Product.Price);
+                break;
+            case 4:
+                items = items.OrderByDescending(i => i.Product.Price);
+                break;
+            default:
+                break;
+        }
+
+        return items.ToList();
+    }
+
+    public List<CartItem> ApplyPagination(List<CartItem> items, int pageIndex, int pageSize)
+    {
+        return items.Skip((pageIndex - 1) * pageSize).Take(pageSize).ToList();
+    }
+
     /// <summary>
     /// Checks whether an Invoice was already processed.
     /// </summary>

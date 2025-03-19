@@ -42,10 +42,45 @@ public class OrderService : IOrderService
     public async Task<Order> GetOrderWithDependencies(int id)
     {
         return await _context.Orders
+            .Include(o => o.Invoice)
+                .ThenInclude(o => o.Buyer)
             .Include(o => o.Products)
                 .ThenInclude(p => p.Product)
                     .ThenInclude(p => p.Record)
                         .ThenInclude(p => p.Artist)
             .FirstOrDefaultAsync(o => o.ID == id);
+    }
+
+    public async Task<List<Order>> ApplyFilters(IQueryable<Order> orders, string? currentFilter, int? sortOrder)
+    {
+        if (!String.IsNullOrEmpty(currentFilter))
+        {
+            orders = orders.Where(r => r.Invoice.TrackingNumber.ToString() == currentFilter);
+        }
+
+        switch (sortOrder)
+        {
+            case 1:
+                orders = orders.OrderBy(i => i.Invoice.PaymentDateTime);
+                break;
+            case 2:
+                orders = orders.OrderByDescending(i => i.Invoice.PaymentDateTime);
+                break;
+            case 3:
+                orders = orders.OrderBy(i => i.Invoice.TotalPrice);
+                break;
+            case 4:
+                orders = orders.OrderByDescending(i => i.Invoice.TotalPrice);
+                break;
+            default:
+                break;
+        }
+
+        return orders.ToList();
+    }
+
+    public List<Order> ApplyPagination(List<Order> items, int pageIndex, int pageSize)
+    {
+        return items.Skip((pageIndex - 1) * pageSize).Take(pageSize).ToList();
     }
 }

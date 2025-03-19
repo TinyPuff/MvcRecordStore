@@ -36,6 +36,9 @@ public class ArtistService : IArtistService
             .Include(a => a.Label)
             .Include(a => a.Genres)
             .Include(a => a.Records)
+                .ThenInclude(r => r.Label)
+            .Include(a => a.Records)
+                .ThenInclude(r => r.Prices)
             .FirstOrDefaultAsync(a => a.ID == id);
     }
 
@@ -119,6 +122,48 @@ public class ArtistService : IArtistService
             LabelID = artist.LabelID,
             SelectedGenres = GetArtistGenreIDs(artist)
         };
+    }
+
+    public async Task<List<Artist>> ApplyFilters(string? currentFilter, int? sortOrder, int? genreFilter)
+    {
+        var artists = new List<Artist>().AsQueryable();
+        if (!String.IsNullOrEmpty(currentFilter))
+        {
+            artists = GetAllArtists().Where(r => r.Name.ToUpper().Contains(currentFilter.ToUpper())
+                || r.Country.ToUpper().Contains(currentFilter)
+                || r.Label.Name.ToUpper().Contains(currentFilter.ToUpper()));
+        }
+        else
+        {
+            artists = GetAllArtists();
+        }
+
+        switch (sortOrder)
+        {
+            case 1:
+                artists = artists.OrderBy(i => i.Name);
+                break;
+            case 2:
+                artists = artists.OrderByDescending(i => i.Name);
+                break;
+            default:
+                break;
+        }
+
+        if (genreFilter != null)
+        {   
+            var genre = await _context.Genres.FirstOrDefaultAsync(g => g.ID == genreFilter);
+            if (genre != null)
+            {
+                artists = artists.Where(i => i.Genres.Contains(genre));
+            }
+        }
+        return artists.ToList();
+    }
+
+    public List<Artist> ApplyPagination(List<Artist> artists, int pageIndex, int pageSize)
+    {
+        return artists.Skip((pageIndex - 1) * pageSize).Take(pageSize).ToList();
     }
     
     /// <summary>

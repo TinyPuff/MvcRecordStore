@@ -163,6 +163,49 @@ public class RecordService : IRecordService
         };
     }
 
+    public async Task<List<Record>> ApplyFilters(IQueryable<Record> records, string? currentFilter, int? sortOrder, int? genreFilter)
+    {
+        if (!String.IsNullOrEmpty(currentFilter))
+        {
+            records = records.Where(r => r.Name.ToUpper().Contains(currentFilter.ToUpper())
+                || r.Artist.Name.ToUpper().Contains(currentFilter)
+                || r.Label.Name.ToUpper().Contains(currentFilter.ToUpper()));
+        }
+
+        switch (sortOrder)
+        {
+            case 1:
+                records = records.OrderBy(i => i.Name);
+                break;
+            case 2:
+                records = records.OrderByDescending(i => i.Name);
+                break;
+            case 3:
+                records = records.OrderBy(i => i.ReleaseDate);
+                break;
+            case 4:
+                records = records.OrderByDescending(i => i.ReleaseDate);
+                break;
+            default:
+                break;
+        }
+
+        if (genreFilter != null)
+        {   
+            var genre = await _context.Genres.FirstOrDefaultAsync(g => g.ID == genreFilter);
+            if (genre != null)
+            {
+                records = records.Where(i => i.Genres.Contains(genre));
+            }
+        }
+        return records.ToList();
+    }
+
+    public List<Record> ApplyPagination(List<Record> records, int pageIndex, int pageSize)
+    {
+        return records.Skip((pageIndex - 1) * pageSize).Take(pageSize).ToList();
+    }
+
     /// <summary>
     /// Creates a new record from the view model.
     /// </summary>
@@ -299,11 +342,11 @@ public class RecordService : IRecordService
     /// Checks whether a product is in stock or not.
     /// </summary>
     /// <returns>True if it is, false if not.</returns>
-    public bool IsProductInStock(CartItem? cartItem, RecordPrice recordPrice)
+    public bool IsProductInStock(CartItem? cartItem, RecordPrice recordPrice, int quantity)
     {
         if (cartItem != null)
         {
-            if ((cartItem.Quantity + 1) > recordPrice.Stock)
+            if ((cartItem.Quantity + quantity) > recordPrice.Stock)
             {
                 return false;
             }
@@ -314,7 +357,7 @@ public class RecordService : IRecordService
         }
         else
         {
-            return recordPrice.Stock > 0;
+            return recordPrice.Stock >= quantity;
         }
     }
 
@@ -324,13 +367,13 @@ public class RecordService : IRecordService
     /// <param name="recordPrice">RecordPrice object</param>
     /// <param name="user">Current User</param>
     /// <returns>True if the task is successful, false if not.</returns>
-    public async Task<bool> AddRecordToCart(RecordPrice recordPrice, StoreUser user)
+    public async Task<bool> AddRecordToCart(RecordPrice recordPrice, StoreUser user, int quantity)
     {
         var cartItem = await GetCartItem(recordPrice.ID, user);
 
         if (cartItem != null)
         {
-            if (IsProductInStock(cartItem, recordPrice))
+            if (IsProductInStock(cartItem, recordPrice, quantity))
             {
                 cartItem.Quantity++;
             }
@@ -338,7 +381,7 @@ public class RecordService : IRecordService
             _context.Update(cartItem);
             await _context.SaveChangesAsync();
         }
-        else if (IsProductInStock(null, recordPrice))
+        else if (IsProductInStock(null, recordPrice, quantity))
         {
             var cart = new CartItem()
             {
@@ -346,7 +389,7 @@ public class RecordService : IRecordService
                 BuyerID = user.Id,
                 Product = recordPrice,
                 ProductID = recordPrice.ID,
-                Quantity = 1
+                Quantity = quantity
             };
 
             _context.Add(cart);

@@ -17,5 +17,7 @@ public interface IArtistService
     void UpdateArtistProperties(Artist artist, ArtistCreateVM artistVM);
     Task<Artist> CreateNewArtist(ArtistCreateVM artistVM);
     ArtistCreateVM GetArtistViewModelToEdit(Artist artist);
+    Task<List<Artist>> ApplyFilters(string? currentFilter, int? sortOrder, int? genreFilter);
+    List<Artist> ApplyPagination(List<Artist> artists, int pageIndex, int pageSize);
     bool ArtistExists(int id);
 }

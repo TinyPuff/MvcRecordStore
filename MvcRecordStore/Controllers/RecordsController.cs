@@ -13,6 +13,7 @@ using MvcRecordStore.Data;
 using MvcRecordStore.Models;
 using MvcRecordStore.Models.ViewModels;
 using MvcRecordStore.Services;
+using Microsoft.Extensions.Configuration;
 
 namespace MvcRecordStore.Controllers
 {
@@ -21,19 +22,27 @@ namespace MvcRecordStore.Controllers
         private readonly StoreDbContext _context;
         private readonly IRecordService _recordService;
         private readonly UserManager<StoreUser> _userManager;
+        private readonly IConfiguration Configuration;
 
-        public RecordsController(StoreDbContext context, IRecordService recordService, UserManager<StoreUser> userManager)
+        public RecordsController(StoreDbContext context, IRecordService recordService, UserManager<StoreUser> userManager, IConfiguration configuration)
         {
             _context = context;
             _recordService = recordService;
             _userManager = userManager;
+            Configuration = configuration;
         }
 
         // GET: Records
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string currentFilter, int sortOrder, int genreFilter, int pageIndex)
         {
-            var storeDbContext = _recordService.GetAllRecords();
-            return View(await storeDbContext.ToListAsync());
+            pageIndex = pageIndex >= 1 ? pageIndex : 1;
+            PopulateIndexViewData(currentFilter, sortOrder, genreFilter, pageIndex);
+            var pageSize = Configuration.GetValue("PageSize", 3);
+
+            var data = await _recordService.ApplyFilters(_recordService.GetAllRecords(), currentFilter, sortOrder, genreFilter);
+            ViewBag.TotalPages = Math.Ceiling(data.Count() / (double)pageSize);
+
+            return View(_recordService.ApplyPagination(data, pageIndex, pageSize));
         }
 
         // GET: Records/Details/5
@@ -58,7 +67,7 @@ namespace MvcRecordStore.Controllers
         [Authorize]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Details(int id, [Bind("Input")] RecordDetailsVM recordVM)
+        public async Task<IActionResult> Details(int id, [Bind("Input,Quantity")] RecordDetailsVM recordVM)
         {
             var user = await _userManager.GetUserAsync(User);
             var record = await _recordService.GetRecordWithoutDependencies(id);
@@ -68,7 +77,7 @@ namespace MvcRecordStore.Controllers
             }
 
             var recordPrice = await _recordService.GetSelectedFormat(recordVM, id);
-            if (await _recordService.AddRecordToCart(recordPrice, user)) // Redirects to shopping cart in case of success
+            if (await _recordService.AddRecordToCart(recordPrice, user, recordVM.Quantity)) // Redirects to shopping cart in case of success
             {
                 return RedirectToRoute(new
                 {
@@ -85,7 +94,7 @@ namespace MvcRecordStore.Controllers
         // GET: Records/Create
         public IActionResult Create()
         {
-            PopulateViewData();
+            PopulateDropdowns();
             return View();
         }
 
@@ -98,7 +107,7 @@ namespace MvcRecordStore.Controllers
         {
             if (!ModelState.IsValid)
             {
-                PopulateViewData();
+                PopulateDropdowns();
                 return View(recordVM);
             }
 
@@ -127,7 +136,7 @@ namespace MvcRecordStore.Controllers
 
             var recordVM = await _recordService.GetRecordViewModelToEdit(record, (int)id);
 
-            PopulateViewData();
+            PopulateDropdowns();
             return View(recordVM);
         }
 
@@ -213,10 +222,19 @@ namespace MvcRecordStore.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        public void PopulateIndexViewData(string? currentFilter, int? sortOrder, int? genreFilter, int? pageIndex)
+        {
+            ViewData["PageIndex"] = pageIndex;
+            ViewData["CurrentFilter"] = currentFilter;
+            ViewData["SortOrder"] = sortOrder;
+            ViewData["GenreFilter"] = genreFilter;
+            ViewBag.Genres = _context.Genres.ToList();
+        }
+
         /// <summary>
         /// Populates the view data for dropdown lists.
         /// </summary>
-        public void PopulateViewData()
+        public void PopulateDropdowns()
         {
             ViewBag.Artists = _context.Artists.ToList();
             ViewBag.Labels = _context.Labels.ToList();

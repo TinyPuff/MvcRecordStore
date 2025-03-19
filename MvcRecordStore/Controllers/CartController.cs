@@ -38,11 +38,18 @@ public class CartController : Controller
     }
 
     // GET: Cart
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(string currentFilter, int sortOrder, int pageIndex)
     {
-        var user = await _userManager.GetUserAsync(User);
+        pageIndex = pageIndex >= 1 ? pageIndex : 1;
+        PopulateIndexViewData(currentFilter, sortOrder, pageIndex);
 
-        return View(await _cartService.GetUserCart(user));
+        var user = await _userManager.GetUserAsync(User);
+        var cart = await _cartService.GetUserCart(user);
+        var pageSize = 10;
+        var data = await _cartService.ApplyFilters(cart.AsQueryable(), currentFilter, sortOrder);
+        ViewBag.TotalPages = Math.Ceiling(data.Count() / (double)pageSize);
+
+        return View(_cartService.ApplyPagination(data, pageIndex, pageSize));
     }
 
     // GET: Cart/Delete/5
@@ -130,5 +137,12 @@ public class CartController : Controller
             await _context.SaveChangesAsync();
         }
         return RedirectToAction("Index", "Orders");
+    }
+
+    public void PopulateIndexViewData(string? currentFilter, int? sortOrder, int? pageIndex)
+    {
+        ViewData["PageIndex"] = pageIndex;
+        ViewData["CurrentFilter"] = currentFilter;
+        ViewData["SortOrder"] = sortOrder;
     }
 }

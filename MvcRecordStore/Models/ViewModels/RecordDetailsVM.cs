@@ -6,6 +6,8 @@ namespace MvcRecordStore.Models.ViewModels;
 public class RecordDetailsVM : Record
 {
     public string Input { get; set; }
+    
+    public int Quantity { get; set; }
 }
 
 public enum RecordType
