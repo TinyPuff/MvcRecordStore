@@ -3,60 +3,134 @@
     ViewData["Title"] = "Your Orders";
 }
 
-<h3>Orders</h3>
+<section class="py-4"></section>
 
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                Date & Time
-            </th>
-            <th>
-                Gateway
-            </th>
-            <th>
-                Status
-            </th>
-            <th>
-                Total Price
-            </th>
-            <th>
-                Tracking Number
-            </th>
-            <th>
-                Transaction Code
-            </th>
-            <th>
-                Products
-            </th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model) 
+<section class="bg-dark rounded py-5">
+    <div class="row mb-5">
+        <div class="col text-center mx-auto">
+            <h4 class="fw-bold" style="color: var(--bs-secondary-color)">Your Orders</h4>
+            <h6 class="text-success">You can track your previous purchases here</h6>
+        </div>
+    </div>
+    <hr />
+    <div class="row mt-4">
+        <div class="col-sm-5 mx-auto">
+            <form class="bg-primary-light mb-2 rounded p-3 border border-primary" asp-action="Index" method="get">
+                <div class="mb-2">
+                    <label for="currentFilter" style="width: 60px;">Search: </label>
+                    <input type="text" name="currentFilter" placeholder="Enter tracking code" value="@ViewData["CurrentFilter"]" style="width: 232px;" />
+                    <br>
+                </div>
+                
+                <div class="mb-2">
+                    <label for="sortOrder" style="width: 60px;">Sort by: </label>
+                    <select name="sortOrder" style="width: 232px;">
+                        <option value="0">Select an option</option>
+                        <option value="1">Date (ascending)</option>
+                        <option value="2">Date (descending)</option>
+                        <option value="3">Total Price (ascending)</option>
+                        <option value="4">Total Price (descending)</option>
+                    </select>
+                    <br>
+                </div>
+
+                <input type="submit" value="Apply Filters" class="btn btn-primary" />
+            </form>
+        </div>
+    </div>
+    <div class="py-5 p-lg-5">
+        <table class="table table-dark table-striped border">
+            <thead>
+                <tr>
+                    <th class="text-muted">
+                        Date & Time
+                    </th>
+                    <th class="text-muted">
+                        Gateway
+                    </th>
+                    <th class="text-muted">
+                        Status
+                    </th>
+                    <th class="text-muted">
+                        Total Price
+                    </th>
+                    <th class="text-muted">
+                        Tracking Number
+                    </th>
+                    <th class="text-muted">
+                        Transaction Code
+                    </th>
+                    <th class="text-muted">
+                        Products
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model) 
+                {
+                    <tr>
+                        <td class="text-muted">
+                            @Html.DisplayFor(modelItem => item.Invoice.PaymentDateTime)
+                        </td>
+                        <td class="text-muted">
+                            @Html.DisplayFor(modelItem => item.Invoice.GatewayName)
+                        </td>
+                        <td class="text-muted">
+                            @Html.DisplayFor(modelItem => item.Invoice.Status)
+                        </td>
+                        <td class="text-muted">
+                            $@Html.DisplayFor(modelItem => item.Invoice.TotalPrice)
+                        </td>
+                        <td class="text-muted">
+                            @Html.DisplayFor(modelItem => item.Invoice.TrackingNumber)
+                        </td>
+                        <td class="text-muted">
+                            @Html.DisplayFor(modelItem => item.Invoice.TransactionCode)
+                        </td>
+                        <td class="text-muted">
+                            <a asp-action="Details" asp-route-id="@item.ID">View Details</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<div class="container my-2">
+    <nav aria-label="Page navigation example">
+    <ul class="pagination">
+        @if ((int)ViewData["PageIndex"] > 1)
         {
-            <tr>
-                <td>
-                    @Html.DisplayFor(modelItem => item.Invoice.PaymentDateTime)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.Invoice.GatewayName)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.Invoice.Status)
-                </td>
-                <td>
-                    $@Html.DisplayFor(modelItem => item.Invoice.TotalPrice)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.Invoice.TrackingNumber)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.Invoice.TransactionCode)
-                </td>
-                <td>
-                    <a asp-action="Details" asp-route-id="@item.ID">View Details</a>
-                </td>
-            </tr>
+            var previousPage = ((int)ViewData["PageIndex"] - 1);
+            <li class="page-item"><a class="page-link" asp-action="Index" asp-route-pageIndex="@previousPage" asp-route-currentFilter="@ViewData["CurrentFilter"]" asp-route-sortOrder="@ViewData["SortOrder"]">Previous</a></li>
         }
-    </tbody>
-</table>
+        else
+        {
+            <li class="page-item"><a class="page-link disabled" href="#">Previous</a></li>
+        }
+        @for (int i = 1; i <= ViewBag.TotalPages; i++)
+        {
+            if (i == (int)ViewData["PageIndex"])
+            {
+                <li class="page-item"><a class="page-link active" asp-action="Index" asp-route-pageIndex="@i" asp-route-currentFilter="@ViewData["CurrentFilter"]" asp-route-sortOrder="@ViewData["SortOrder"]">@i</a></li>
+            }
+            else
+            {
+                <li class="page-item"><a class="page-link" asp-action="Index" asp-route-pageIndex="@i" asp-route-currentFilter="@ViewData["CurrentFilter"]" asp-route-sortOrder="@ViewData["SortOrder"]">@i</a></li>
+            }
+        }
+        @if ((int)ViewData["PageIndex"] < (int)(double)ViewData["TotalPages"])
+        {
+            var nextPage = ((int)ViewData["PageIndex"] + 1);
+            <li class="page-item"><a class="page-link" asp-action="Index" asp-route-pageIndex="@nextPage" asp-route-currentFilter="@ViewData["CurrentFilter"]" asp-route-sortOrder="@ViewData["SortOrder"]">Next</a></li>
+        }
+        else
+        {
+            <li class="page-item"><a class="page-link disabled" href="#">Next</a></li>
+        }
+    </ul>
+    </nav>
+</div>
+
+<section class="py-5"></section>

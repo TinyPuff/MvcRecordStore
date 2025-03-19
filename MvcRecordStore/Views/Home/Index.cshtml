@@ -4,34 +4,54 @@
     ViewData["Title"] = "Home Page";
 }
 
-<div class="jumbotron text-center bg-dark text-white border rounded">
-    <h1 class="display-4">Welcome to the MVC Record Store!</h1>
-    <p class="lead">Discover and purchase your favorite records.</p>
-    <a class="btn btn-primary btn-lg mb-2" asp-controller="Records" asp-action="Index" role="button">Browse Records</a>
-</div>
-
-<h2 class="text-center">Featured Records</h2>
-<div class="row">
-    @foreach (var record in Model)
-    {
-        <div class="col-md-4">
-            <div class="card mb-4 shadow-sm">
-                <!-- <img class="card-img-top" src="@@record.ImageUrl" alt="@@record.Title"> -->
-                <div class="card-body">
-                    <h5 class="card-title"><i>@record.Name</i> by @record.ArtistName</h5>
-                    <p class="card-text">on @record.LabelName</p>
-                    @if (record.Prices != null)
-                    {
-                        var lowestPrice = record.Prices.OrderByDescending(p => p.Price).Last();
-                        <p class="card-text">@lowestPrice.Format: $@lowestPrice.Price (@lowestPrice.Stock left in stock) </p>
-                    }
-                    else
-                    {
-                        <p class="card-text">No formats in stock!</p>
-                    }
-                    <a href="@Url.Action("Details", "Records", new { id = record.ID })" class="btn btn-primary">View Details</a>
+<header class="bg-dark rounded">
+    <div class="container pt-xl-1 pb-4">
+        <div class="row pt-5">
+            <div class="col-md-8 col-xl-6 text-center text-md-start mx-auto">
+                <div class="text-center">
+                    <h4 class="fw-bold">Record Store Made With ASP.NET Core (MVC)</h1>
+                    <p class="fw-bold text-success mb-2">Visit the GitHub Repository</p>
                 </div>
             </div>
         </div>
-    }
-</div>
+    </div>
+</header>
+
+<section class="py-5"></section>
+
+<section>
+    <div class="container rounded bg-dark py-5">
+        <div class="row">
+            <div class="col-md-8 col-xl-6 text-center mx-auto">
+                <h4 class="fw-bold text-success mb-2">Featured Records</h4>
+            </div>
+        </div>
+        <div class="py-5 p-lg-5">
+            <div class="row row-cols-1 row-cols-md-2 mx-auto" style="max-width: 900px;">
+                @foreach (var record in Model)
+                {
+                    <div class="col mb-5">
+                        <div class="card bg-primary-light">
+                            <div class="card-body text-center py-5">
+                                <h5 class="card-title fw-bold"><i>@record.Name</i> by @record.ArtistName</h5>
+                                <p class="card-text text-muted mb-4">on @record.LabelName</p>
+                                @if (record.Prices != null)
+                                {
+                                    var lowestPrice = record.Prices.OrderByDescending(p => p.Price).Last();
+                                    <p class="card-text text-muted card-text mb-2">@lowestPrice.Format: $@lowestPrice.Price (@lowestPrice.Stock left in stock)</p>
+                                }
+                                else
+                                {
+                                    <p class="card-text text-muted card-text mb-2">No formats in stock.</p>
+                                }
+                                <a href="@Url.Action("Details", "Records", new { id = record.ID })" class="btn btn-primary shadow">View Details</a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="py-5"></section>

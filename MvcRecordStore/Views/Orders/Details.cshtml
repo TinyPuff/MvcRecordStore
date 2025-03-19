@@ -4,36 +4,49 @@
     ViewData["Title"] = "Details";
 }
 
-<h1>Details</h1>
+<section class="py-4"></section>
 
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                Product
-            </th>
-            <th>
-                Price
-            </th>
-            <th>
-                Quantity
-            </th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model.Products)
-        {
-            <tr>
-                <td>
-                    @item.Product.Record.Artist.Name - @item.Product.Record.Name (@item.Product.Format)
-                </td>
-                <td>
-                    $@item.Product.Price
-                </td>
-                <td>
-                    @item.Quantity
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
+<section class="bg-dark rounded py-5">
+    <div class="row mb-5">
+        <div class="col text-center mx-auto">
+            <h4 class="fw-bold" style="color: var(--bs-secondary-color)">Order Details</h4>
+            <h6 class="text-success">Tracking Number: @Model.Invoice.TrackingNumber</h6>
+        </div>
+    </div>
+    <hr />
+    <div class="py-5 p-lg-5">
+        <table class="table table-dark table-striped border">
+            <thead>
+                <tr>
+                    <th class="text-muted">
+                        Product
+                    </th>
+                    <th class="text-muted">
+                        Price
+                    </th>
+                    <th class="text-muted">
+                        Quantity
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Products) 
+                {
+                    <tr>
+                        <td class="text-muted">
+                            @item.Product.Record.Artist.Name - @item.Product.Record.Name (@item.Product.Format)
+                        </td>
+                        <td class="text-muted">
+                            $@item.Product.Price
+                        </td>
+                        <td class="text-muted">
+                            @item.Quantity
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="py-5"></section>

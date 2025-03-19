@@ -17,10 +17,6 @@ html {
   min-height: 100%;
 }
 
-body {
-  margin-bottom: 60px;
-}
-
 .form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
   color: var(--bs-secondary-color);
   text-align: end;
@@ -40,4 +36,28 @@ body {
 
 .navbar-dark .navbar-nav .nav-link:hover {
   color: white;
+}
+
+.dropdown-menu:hover {
+  --bs-dropdown-link-hover-color: var(--bs-secondary-color);
+  --bs-dropdown-link-hover-bg: #3763f4;
+}
+
+.pagination
+{
+  --bs-pagination-color: var(--bs-secondary-color);
+  --bs-pagination-border-color: #3763f4;
+  --bs-pagination-bg: #3763f4;
+  --bs-pagination-hover-color: black;
+  --bs-pagination-hover-border-color: #19f5aa;
+  --bs-pagination-hover-bg: #19f5aa;
+  --bs-pagination-active-color: var(--bs-secondary-color);
+  --bs-pagination-active-bg: #162862;
+  --bs-pagination-active-border-color: #162862;
+  --bs-pagination-focus-color: black;
+  --bs-pagination-focus-bg: #19f5aa;
+  --bs-pagination-focus-border-bg: #19f5aa;
+  --bs-pagination-focus-box-shadow: #19f5aa;
+  --bs-pagination-disabled-bg: #162862;
+  --bs-pagination-disabled-border-color: #162862;
 }

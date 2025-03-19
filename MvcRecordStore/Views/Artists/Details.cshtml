@@ -1,36 +1,115 @@
-@model MvcRecordStore.Models.Artist
+@model MvcRecordStore.Models.ViewModels.ArtistDetailsVM
 
 @{
     ViewData["Title"] = "Details";
 }
 
-<h1>Details</h1>
+<section class="py-4"></section>
 
-<div>
-    <h4>Artist</h4>
+<div class="bg-dark rounded py-5">
+    <div class="row mb-5">
+        <div class="col text-center mx-auto">
+            <h4 class="fw-bold" style="color: var(--bs-secondary-color)">@Html.DisplayFor(model => model.Artist.Name)</h4>
+            <h6 class="text-success">Signed to @Html.DisplayFor(model => model.Artist.Label.Name), Based in: @Html.DisplayFor(model => model.Artist.Country)</h6>
+        </div>
+    </div>
     <hr />
-    <dl class="row">
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Name)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Name)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Country)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Country)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Label)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Label.Country)
-        </dd>
-    </dl>
+    <div class="row mt-4">
+        <div class="col-sm-5 mx-auto">
+            <form class="bg-primary-light mb-2 rounded p-3 border border-primary" asp-action="Details" method="get">
+                <div class="mb-2">
+                    <label for="currentFilter" style="width: 60px;">Search: </label>
+                    <input type="text" name="currentFilter" placeholder="Search bar" value="@ViewData["CurrentFilter"]" style="width: 232px;" />
+                    <br>
+                </div>
+                
+                <div class="mb-2">
+                    <label for="sortOrder" style="width: 60px;">Sort by: </label>
+                    <select name="sortOrder" style="width: 232px;">
+                        <option value="0">Select an option</option>
+                        <option value="1">Alphabetical order (ascending)</option>
+                        <option value="2">Alphabetical order (descending)</option>
+                    </select>
+                    <br>
+                </div>
+                
+                <div class="mb-2">
+                    <label for="genreFilter" style="width: 60px;">Genre: </label>
+                    <select name="genreFilter" style="width: 232px;">
+                        <option value="0">Select an option</option>
+                        @foreach (var option in ViewBag.Genres)
+                        {
+                            <option value="@option.ID">@option.Name</option>
+                        }
+                    </select>
+                    <br>
+                </div>
+
+                <input type="submit" value="Apply Filters" class="btn btn-primary" />
+            </form>
+        </div>
+    </div>
+    <div class="py-5 p-lg-5">
+        <div class="row row-cols-1 row-cols-md-3 mx-auto" style="max-width: 950px;">
+            @foreach (var record in Model.Records)
+            {
+                <div class="col mb-4">
+                    <div class="card bg-primary-light" style="min-height: 306px;">
+                        <div class="card-body text-center py-5">
+                            <h5><a class="text-light fw-bold" asp-action="Details" asp-route-id="@record.ID"><i>@record.Name</i> by @record.Artist.Name</a></h5>
+                            <p class="card-text text-muted mb-4">on @record.Label.Name, @Html.DisplayFor(modelItem => record.ReleaseDate)</p>
+                            @if (record.Prices != null)
+                            {
+                                var lowestPrice = record.Prices.OrderByDescending(p => p.Price).Last();
+                                <p class="card-text text-muted card-text mb-4">@lowestPrice.Format: $@lowestPrice.Price (@lowestPrice.Stock left in stock)</p>
+                            }
+                            else
+                            {
+                                <p class="card-text text-muted card-text mb-4">No formats in stock.</p>
+                            }
+                            <a class="btn btn-primary shadow mt-2" asp-controller="Records" asp-action="Details" asp-route-id="@record.ID">Details</a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
 </div>
-<div>
-    <a asp-action="Edit" asp-route-id="@Model?.ID">Edit</a> |
-    <a asp-action="Index">Back to List</a>
+
+<div class="container my-2">
+    <nav aria-label="Page navigation example">
+    <ul class="pagination">
+        @if ((int)ViewData["PageIndex"] > 1)
+        {
+            var previousPage = ((int)ViewData["PageIndex"] - 1);
+            <li class="page-item"><a class="page-link" asp-action="Details" asp-route-pageIndex="@previousPage" asp-route-currentFilter="@ViewData["CurrentFilter"]" asp-route-sortOrder="@ViewData["SortOrder"]" asp-route-genreFilter="@ViewData["GenreFilter"]">Previous</a></li>
+        }
+        else
+        {
+            <li class="page-item"><a class="page-link disabled" href="#">Previous</a></li>
+        }
+        @for (int i = 1; i <= ViewBag.TotalPages; i++)
+        {
+            if (i == (int)ViewData["PageIndex"])
+            {
+                <li class="page-item"><a class="page-link active" asp-action="Details" asp-route-pageIndex="@i" asp-route-currentFilter="@ViewData["CurrentFilter"]" asp-route-sortOrder="@ViewData["SortOrder"]" asp-route-genreFilter="@ViewData["GenreFilter"]">@i</a></li>
+            }
+            else
+            {
+                <li class="page-item"><a class="page-link" asp-action="Details" asp-route-pageIndex="@i" asp-route-currentFilter="@ViewData["CurrentFilter"]" asp-route-sortOrder="@ViewData["SortOrder"]" asp-route-genreFilter="@ViewData["GenreFilter"]">@i</a></li>
+            }
+        }
+        @if ((int)ViewData["PageIndex"] < (int)(double)ViewData["TotalPages"])
+        {
+            var nextPage = ((int)ViewData["PageIndex"] + 1);
+            <li class="page-item"><a class="page-link" asp-action="Details" asp-route-pageIndex="@nextPage" asp-route-currentFilter="@ViewData["CurrentFilter"]" asp-route-sortOrder="@ViewData["SortOrder"]" asp-route-genreFilter="@ViewData["GenreFilter"]">Next</a></li>
+        }
+        else
+        {
+            <li class="page-item"><a class="page-link disabled" href="#">Next</a></li>
+        }
+    </ul>
+    </nav>
 </div>
+
+<section class="py-5"></section>
