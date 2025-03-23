@@ -22,10 +22,12 @@ using MvcRecordStore.Data;
 
 namespace MvcRecordStore.Areas.Identity.Pages.Account
 {
+    [AllowAnonymous]
     public class RegisterModel : PageModel
     {
         private readonly SignInManager<StoreUser> _signInManager;
         private readonly UserManager<StoreUser> _userManager;
+        private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IUserStore<StoreUser> _userStore;
         private readonly IUserEmailStore<StoreUser> _emailStore;
         private readonly ILogger<RegisterModel> _logger;
@@ -35,6 +37,7 @@ namespace MvcRecordStore.Areas.Identity.Pages.Account
             UserManager<StoreUser> userManager,
             IUserStore<StoreUser> userStore,
             SignInManager<StoreUser> signInManager,
+            RoleManager<IdentityRole> roleManager,
             ILogger<RegisterModel> logger,
             IEmailSender emailSender)
         {
@@ -42,6 +45,7 @@ namespace MvcRecordStore.Areas.Identity.Pages.Account
             _userStore = userStore;
             _emailStore = GetEmailStore();
             _signInManager = signInManager;
+            _roleManager = roleManager;
             _logger = logger;
             _emailSender = emailSender;
         }
@@ -100,7 +104,6 @@ namespace MvcRecordStore.Areas.Identity.Pages.Account
             public string ConfirmPassword { get; set; }
         }
 
-
         public async Task OnGetAsync(string returnUrl = null)
         {
             ReturnUrl = returnUrl;
@@ -123,13 +126,22 @@ namespace MvcRecordStore.Areas.Identity.Pages.Account
                 {
                     _logger.LogInformation("User created a new account with password.");
 
+                    // Ensure the "User" role exists
+                    if (!await _roleManager.RoleExistsAsync("User"))
+                    {
+                        await _roleManager.CreateAsync(new IdentityRole("User"));
+                    }
+
+                    // Add the user to the "User" role
+                    await _userManager.AddToRoleAsync(user, "User");
+
                     var userId = await _userManager.GetUserIdAsync(user);
                     var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
                     code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
                     var callbackUrl = Url.Page(
                         "/Account/ConfirmEmail",
                         pageHandler: null,
-                        values: new { area = "Identity", userId = userId, code = code, returnUrl = returnUrl },
+                        values: new { area = "Identity", userId = userId, code = code },
                         protocol: Request.Scheme);
 
                     await _emailSender.SendEmailAsync(Input.Email, "Confirm your email",
