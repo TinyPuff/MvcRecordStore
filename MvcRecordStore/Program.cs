@@ -7,19 +7,18 @@ using Parbad.AspNetCore;
 using Parbad.Storage.EntityFrameworkCore;
 using Parbad.Builder;
 using Parbad.Gateway.ParbadVirtual;
-using Parbad.Gateway.ZarinPal;
-using Parbad.Gateway.IdPay;
 using Parbad.Storage.EntityFrameworkCore.Builder;
-using Parbad.Gateway.Mellat;
-using Parbad.Gateway.PayPing;
-using Parbad.Gateway.YekPay;
 
 var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("StoreDbContextConnection") ?? throw new InvalidOperationException("Connection string 'StoreDbContextConnection' not found.");
 
 builder.Services.AddDbContext<StoreDbContext>(options => options.UseSqlServer(connectionString));
 
-builder.Services.AddDefaultIdentity<StoreUser>(options => options.SignIn.RequireConfirmedAccount = true).AddEntityFrameworkStores<StoreDbContext>();
+builder.Services
+    .AddDefaultIdentity<StoreUser>(options => options.SignIn.RequireConfirmedAccount = true)
+    .AddRoles<IdentityRole>()
+    .AddEntityFrameworkStores<StoreDbContext>();
+
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 builder.Services.AddCustomServices();
@@ -31,27 +30,6 @@ builder.Services.AddParbad()
         gateways
             .AddParbadVirtual()
             .WithOptions(options => options.GatewayPath = "/virtual-gateway");
-
-        gateways
-            .AddZarinPal()
-            .WithAccounts(source =>
-            {
-                source.AddInMemory(account =>
-                {
-                    account.MerchantId = "";
-                    account.IsSandbox = true; // or false for production
-                });
-            });
-
-        gateways
-            .AddIdPay()
-            .WithAccounts(source =>
-            {
-                source.AddInMemory(account =>
-                {
-                    account.IsTestAccount = true;
-                });
-            });
     })
     .ConfigureHttpContext(builder => builder.UseDefaultAspNetCore())
     .ConfigureStorage(builder => builder.UseDistributedCache());
@@ -66,6 +44,23 @@ builder.Services.AddParbad()
     }); */
 
 var app = builder.Build();
+
+// Seed the database.
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var context = services.GetRequiredService<StoreDbContext>();
+    context.Database.EnsureCreated();
+    try
+    {
+        await SeedData.Initialize(services, context);
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred seeding the DB.");
+    }
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
