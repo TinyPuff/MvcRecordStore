@@ -23,7 +23,10 @@ public class GenreService : IGenreService
     /// <returns>A list of Genre objects.</returns>
     public List<Genre> GetAllGenres()
     {
-        return _context.Genres.ToList();
+        return _context.Genres
+        .Include(g => g.Artists)
+        .Include(g => g.Records)
+        .ToList();
     }
 
     /// <summary>
@@ -45,6 +48,34 @@ public class GenreService : IGenreService
     public async Task<Genre> GetGenreWithoutDependencies(int id)
     {
         return await _context.Genres.FirstOrDefaultAsync(g => g.ID == id);
+    }
+
+    public async Task<List<Genre>> ApplyFilters(string? currentFilter, int? sortOrder)
+    {
+        var genres = GetAllGenres().AsQueryable();
+        if (!String.IsNullOrEmpty(currentFilter))
+        {
+            genres = genres.Where(r => r.Name.ToUpper().Contains(currentFilter.ToUpper()));
+        }
+
+        switch (sortOrder)
+        {
+            case 1:
+                genres = genres.OrderBy(i => i.Name);
+                break;
+            case 2:
+                genres = genres.OrderByDescending(i => i.Name);
+                break;
+            default:
+                break;
+        }
+
+        return genres.ToList();
+    }
+
+    public List<Genre> ApplyPagination(List<Genre> genres, int pageIndex, int pageSize)
+    {
+        return genres.Skip((pageIndex - 1) * pageSize).Take(pageSize).ToList();
     }
 
     /// <summary>

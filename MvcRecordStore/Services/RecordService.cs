@@ -335,7 +335,7 @@ public class RecordService : IRecordService
     /// <returns>CartItem object.</returns>
     public async Task<CartItem> GetCartItem(int productID, StoreUser user)
     {
-        return await _context.CartItems.FirstOrDefaultAsync(c => c.Buyer == user && c.ProductID == productID);
+        return await _context.CartItems.FirstOrDefaultAsync(c => c.Buyer == user && c.ProductID == productID && c.PaidFor == false);
     }
 
     /// <summary>
@@ -375,11 +375,13 @@ public class RecordService : IRecordService
         {
             if (IsProductInStock(cartItem, recordPrice, quantity))
             {
-                cartItem.Quantity++;
+                cartItem.Quantity += quantity;
+                _context.Update(cartItem);
             }
-
-            _context.Update(cartItem);
-            await _context.SaveChangesAsync();
+            else
+            {
+                return false; // Not enough stock
+            }
         }
         else if (IsProductInStock(null, recordPrice, quantity))
         {
@@ -393,8 +395,13 @@ public class RecordService : IRecordService
             };
 
             _context.Add(cart);
-            await _context.SaveChangesAsync();
         }
+        else
+        {
+            return false; // Not enough stock
+        }
+        
+        await _context.SaveChangesAsync();
         return true;
     }
 

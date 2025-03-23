@@ -23,7 +23,9 @@ public class ArtistService : IArtistService
     /// </summary>
     public IQueryable<Artist> GetAllArtists()
     {
-        return _context.Artists.Include(a => a.Label);
+        return _context.Artists
+            .Include(a => a.Label)
+            .Include(a => a.Genres);
     }
 
     /// <summary>
@@ -39,6 +41,8 @@ public class ArtistService : IArtistService
                 .ThenInclude(r => r.Label)
             .Include(a => a.Records)
                 .ThenInclude(r => r.Prices)
+            .Include(a => a.Records)
+                .ThenInclude(r => r.Genres)
             .FirstOrDefaultAsync(a => a.ID == id);
     }
 

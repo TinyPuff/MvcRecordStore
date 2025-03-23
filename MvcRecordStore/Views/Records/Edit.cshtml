@@ -1,85 +1,95 @@
 @model MvcRecordStore.Models.ViewModels.RecordCreateVM
 
 @{
+    Layout = "../Admin/_AdminLayout.cshtml";
     ViewData["Title"] = "Edit";
 }
 
-<h1>Edit</h1>
-
-<h4>Record</h4>
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="Edit">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <input type="hidden" asp-for="ID" />
-            <div class="form-group">
-                <label asp-for="Name" class="control-label"></label>
-                <input asp-for="Name" class="form-control" />
-                <span asp-validation-for="Name" class="text-danger"></span>
+<div class="row mt-4">
+    <div class="col-md-8 mx-auto">
+        <div class="card border rounded-0 border-2 shadow-sm">
+            <div class="card-header bg-dark text-white">
+                <h5>Edit Record</h5>
             </div>
-            <div class="form-group">
-                <label asp-for="ArtistID" class="control-label">Artist</label>
-                <select asp-for="ArtistID" class="form-control">
-                    @foreach(var item in ViewBag.Artists)
-                    {
-                        <option value="@item.ID">@item.Name</option>
-                    }
-                </select>
-            </div>
-            <div class="form-group">
-                <label asp-for="Type" class="control-label">Type</label>
-                <select asp-for="Type" class="form-control" asp-items="Html.GetEnumSelectList<RecordType>()"></select>
-            </div>
-            <div class="form-group">
-                <label asp-for="ReleaseDate" class="control-label"></label>
-                <input asp-for="ReleaseDate" class="form-control" />
-                <span asp-validation-for="ReleaseDate" class="text-danger"></span>
-            </div>
-            <div id="formatsContainer">
-                @for (int i = 0; i < Model.FormatPrices.Count; i++)
-                {
-                    @await Component.InvokeAsync("FormatPriceVC", new { 
-                        index = i,
-                        formatPrice = Model.FormatPrices[i]
-                        })
-                }
-            </div>
-            <button type="button" id="addFormatButton" class="btn btn-secondary">Add Format</button>
-            <div class="form-group">
-                <label asp-for="LabelID" class="control-label">Label</label>
-                <select asp-for="LabelID" class="form-control">
-                    @foreach(var item in ViewBag.Labels)
-                    {
-                        <option value="@item.ID">@item.Name</option>
-                    }
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Genres</label>
-                @foreach (var item in ViewBag.Genres)
-                {
-                    @if(Model.SelectedGenres.Contains(item.ID))
-                    {
-                        <div>
-                            <input type="checkbox" checked name="SelectedGenres" value="@item.ID" />
-                            <label>@item.Name</label>
+            <div class="card-body">
+                <form asp-action="Edit">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <input type="hidden" asp-for="ID" />
+                    <div class="form-group">
+                        <label asp-for="Name" class="control-label"></label>
+                        <input asp-for="Name" class="form-control" />
+                        <span asp-validation-for="Name" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="ArtistID" class="control-label">Artist</label>
+                        <select asp-for="ArtistID" class="form-control">
+                            @foreach(var item in ViewBag.Artists)
+                            {
+                                <option value="@item.ID">@item.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="Type" class="control-label">Type</label>
+                        <select asp-for="Type" class="form-control" asp-items="Html.GetEnumSelectList<RecordType>()"></select>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="ReleaseDate" class="control-label"></label>
+                        <input asp-for="ReleaseDate" class="form-control" />
+                        <span asp-validation-for="ReleaseDate" class="text-danger"></span>
+                    </div>
+                    <div id="formatsContainer">
+                        @for (int i = 0; i < Model.FormatPrices.Count; i++)
+                        {
+                            @await Component.InvokeAsync("FormatPriceVC", new { 
+                                index = i,
+                                formatPrice = Model.FormatPrices[i]
+                                })
+                        }
+                    </div>
+                    <button type="button" id="addFormatButton" class="btn btn-secondary">Add Format</button>
+                    <div class="form-group">
+                        <label asp-for="LabelID" class="control-label">Label</label>
+                        <select asp-for="LabelID" class="form-control">
+                            @foreach(var item in ViewBag.Labels)
+                            {
+                                <option value="@item.ID">@item.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Genres</label>
+                        <div class="row">
+                            @foreach (var item in ViewBag.Genres)
+                            {
+                                @if(Model.SelectedGenres.Contains(item.ID))
+                                {
+                                    <div class="col-md-3">
+                                        <div class="form-check">
+                                            <input type="checkbox" checked name="SelectedGenres" value="@item.ID" class="form-check-input" />
+                                            <label class="form-check-label">@item.Name</label>
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="col-md-3">
+                                        <div class="form-check">
+                                            <input type="checkbox" name="SelectedGenres" value="@item.ID" class="form-check-input" />
+                                            <label>@item.Name</label>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                            <span asp-validation-for="SelectedGenres"></span>
                         </div>
-                    }
-                    else
-                    {
-                        <div>
-                            <input type="checkbox" name="SelectedGenres" value="@item.ID" />
-                            <label>@item.Name</label>
-                        </div>
-                    }
-                }
-                <span asp-validation-for="SelectedGenres"></span>
+                    </div>
+                    <div class="form-group">
+                        <input type="submit" value="Save" class="btn btn-primary" />
+                    </div>
+                </form>
             </div>
-            <div class="form-group">
-                <input type="submit" value="Save" class="btn btn-primary" />
-            </div>
-        </form>
+        </div>
     </div>
 </div>
 

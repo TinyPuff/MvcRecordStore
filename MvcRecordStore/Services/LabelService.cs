@@ -24,7 +24,10 @@ public class LabelService : ILabelService
     /// <returns>A list of Label objects.</returns>
     public List<Label> GetAllLabels()
     {
-        return _context.Labels.ToList();
+        return _context.Labels
+        .Include(l => l.Artists)
+        .Include(l => l.Records)
+        .ToList();
     }
 
     /// <summary>
@@ -39,6 +42,7 @@ public class LabelService : ILabelService
             .FirstOrDefaultAsync(l => l.ID == id);
     }
 
+
     /// <summary>
     /// Retrieves the label without its dependencies.
     /// </summary>
@@ -46,6 +50,34 @@ public class LabelService : ILabelService
     public async Task<Label> GetLabelWithoutDependencies(int id)
     {
         return await _context.Labels.FirstOrDefaultAsync(l => l.ID == id);
+    }
+
+    public async Task<List<Label>> ApplyFilters(string? currentFilter, int? sortOrder)
+    {
+        var labels = GetAllLabels().AsQueryable();
+        if (!String.IsNullOrEmpty(currentFilter))
+        {
+            labels = labels.Where(r => r.Name.ToUpper().Contains(currentFilter.ToUpper()));
+        }
+
+        switch (sortOrder)
+        {
+            case 1:
+                labels = labels.OrderBy(i => i.Name);
+                break;
+            case 2:
+                labels = labels.OrderByDescending(i => i.Name);
+                break;
+            default:
+                break;
+        }
+
+        return labels.ToList();
+    }
+
+    public List<Label> ApplyPagination(List<Label> labels, int pageIndex, int pageSize)
+    {
+        return labels.Skip((pageIndex - 1) * pageSize).Take(pageSize).ToList();
     }
 
     /// <summary>

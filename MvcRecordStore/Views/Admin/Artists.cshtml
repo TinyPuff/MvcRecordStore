@@ -1,0 +1,187 @@
+@model IEnumerable<MvcRecordStore.Models.Artist>
+
+@{
+    Layout = "~/Views/Admin/_AdminLayout.cshtml";
+    ViewData["Title"] = "Artists";
+}
+
+<div class="card shadow">
+    <div class="card-header py-3">
+        <p class="col text-primary m-0 fw-bold">Artists | <a asp-controller="Artists" asp-action="Create">Create New</a></p>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6 text-nowrap">
+                <div id="dataTable_length" class="dataTables_length" aria-controls="dataTable">
+                    <div class="row">
+                        <form method="get" class="me-5" style="max-width: 100px;">
+                            <label class="form-label">Show
+                                <select name="pageSize" class="d-inline-block form-select form-select-sm"
+                                    onchange="this.form.submit()">
+                                    <option value="5" selected="@((int)ViewData["PageSize"] == 5)">5</option>
+                                    <option value="10" selected="@((int)ViewData["PageSize"] == 10)">10</option>
+                                    <option value="15" selected="@((int)ViewData["PageSize"] == 15)">15</option>
+                                </select>
+                            </label>
+                            <input type="hidden" name="searchString" value="@ViewData["CurrentFilter"]" />
+                            <input type="hidden" name="sortOrder" value="@ViewData["SortOrder"]" />
+                            <input type="hidden" name="pageIndex" value="1" />
+                        </form>
+                        <form method="get" class="me-2 w-50">
+                            <label class="form-label">Sort by
+                                <select name="sortOrder" class="d-inline-block form-select form-select-sm"
+                                    onchange="this.form.submit()">
+                                    <option value="0">Select an option</option>
+                                    <option value="1">Alphabetical order (ascending)</option>
+                                    <option value="2">Alphabetical order (descending)</option>
+                                </select>
+                            </label>
+                            <input type="hidden" name="searchString" value="@ViewData["CurrentFilter"]" />
+                            <input type="hidden" name="pageSize" value="@ViewData["PageSize"]" />
+                            <input type="hidden" name="pageIndex" value="1" />
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div id="dataTable_filter" class="text-md-end dataTables_filter">
+                    <label class="form-label">
+                        <form asp-action="Artists" method="get">
+                            <input type="text" class="form-control form-control-sm" aria-controls="dataTable" name="searchString" value="@ViewData["CurrentFilter"]" placeholder="Search" />
+                            <input type="hidden" name="sortOrder" value="@ViewData["SortOrder"]" />
+                            <input type="hidden" name="pageIndex" value="1" />
+                            <input type="hidden" name="pageSize" value="@ViewData["PageSize"]" />
+                        </form>
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div id="dataTable" class="table-responsive table mt-2" role="grid" aria-describedby="dataTable_info">
+            <table id="dataTable" class="table my-0">
+                <thead>
+                    <tr>
+                        <th class="text-center">@Html.DisplayNameFor(model => model.ID)</th>
+                        <th class="text-center">@Html.DisplayNameFor(model => model.Name)</th>
+                        <th class="text-center">@Html.DisplayNameFor(model => model.Country)</th>
+                        <th class="text-center">@Html.DisplayNameFor(model => model.Label)</th>
+                        <th class="text-center">@Html.DisplayNameFor(model => model.Genres)</th>
+                        <th class="text-center">@Html.DisplayNameFor(model => model.Records)</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td class="text-center">@Html.DisplayFor(modelItem => item.ID)</td>
+                            <td class="text-center">@Html.DisplayFor(modelItem => item.Name)</td>
+                            <td class="text-center">@Html.DisplayFor(modelItem => item.Country)</td>
+                            <td class="text-center">@Html.DisplayFor(modelItem => item.Label.Name)</td>
+                            @if (item.Genres != null)
+                            {
+                                @if (item.Genres != null)
+                                {
+                                    <td class="text-center">
+                                        <select>
+                                            @foreach (var genre in item.Genres)
+                                            {
+                                                <option>@genre.Name</option>
+                                            }
+                                        </select>
+                                    </td>
+                                }
+                            }
+                            else
+                            {
+                                <td class="text-center">Unspecified</td>
+                            }
+                            <td class="text-center">
+                                <a asp-action="ArtistsRecords" asp-route-id="@item.ID">View Records</a>
+                            </td>
+                            <td class="text-center">
+                                <a class="btn btn-primary" asp-controller="Artists" asp-action="Edit"
+                                    asp-route-id="@item.ID"><i class="fas fa-pencil-alt"></i></a>
+                                <a class="btn btn-danger" asp-controller="Artists" asp-action="Delete"
+                                    asp-route-id="@item.ID"><i class="fas fa-trash"></i></a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="row">
+            <div class="col-md-6 align-self-center">
+                <p id="dataTable_info" class="dataTables_info" role="status" aria-live="polite">Showing
+                    @ViewBag.StartItem to @ViewBag.EndItem of @ViewBag.TotalItems</p>
+            </div>
+            <div class="col-md-6">
+                <nav class="d-lg-flex justify-content-lg-end">
+                    <ul class="pagination">
+                        <!-- Previous Page Link -->
+                        @if ((int)ViewData["PageIndex"] > 1)
+                        {
+                            var previousPage = ((int)ViewData["PageIndex"] - 1);
+                            <li class="page-item">
+                                <a class="page-link" asp-action="Artists"
+                                asp-route-sortOrder="@ViewData["SortOrder"]" 
+                                asp-route-searchString="@ViewData["CurrentFilter"]" 
+                                asp-route-pageIndex="@previousPage" 
+                                asp-route-pageSize="@ViewData["PageSize"]">
+                                    <span aria-hidden="true">«</span>
+                                </a>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="page-item disabled">
+                                <span class="page-link" aria-hidden="true">«</span>
+                            </li>
+                        }
+
+                        <!-- Page Number Links -->
+                        @for (int i = 1; i <= ViewBag.TotalPages; i++)
+                        {
+                            if (i == (int)ViewData["PageIndex"])
+                            {
+                                <li class="page-item active">
+                                    <span class="page-link">@i</span>
+                                </li>
+                            }
+                            else
+                            {
+                                <li class="page-item">
+                                    <a class="page-link" asp-action="Artists"
+                                    asp-route-sortOrder="@ViewData["SortOrder"]" 
+                                    asp-route-searchString="@ViewData["CurrentFilter"]" 
+                                    asp-route-pageIndex="@i" 
+                                    asp-route-pageSize="@ViewData["PageSize"]">@i</a>
+                                </li>
+                            }
+                        }
+
+                        <!-- Next Page Link -->
+                        @if ((int)ViewData["PageIndex"] < (int)(double)ViewData["TotalPages"])
+                        {
+                            var nextPage = ((int)ViewData["PageIndex"] + 1);
+                            <li class="page-item">
+                                <a class="page-link" asp-action="Artists"
+                                asp-route-sortOrder="@ViewData["SortOrder"]" 
+                                asp-route-searchString="@ViewData["CurrentFilter"]" 
+                                asp-route-pageIndex="@nextPage" 
+                                asp-route-pageSize="@ViewData["PageSize"]">
+                                    <span aria-hidden="true">»</span>
+                                </a>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="page-item disabled">
+                                <span class="page-link" aria-hidden="true">»</span>
+                            </li>
+                        }
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>

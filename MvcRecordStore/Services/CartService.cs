@@ -123,7 +123,7 @@ public class CartService : ICartService
                 TransactionCode = invoice.TransactionCode
             };
     }
-
+    
     /// <summary>
     /// Create a new order based on the invoice.
     /// </summary>
@@ -131,13 +131,21 @@ public class CartService : ICartService
     /// <param name="user">The current logged in user</param>
     /// <returns>An Order object.</returns>
     public async Task<Order> CreateNewOrder(Invoice invoice, StoreUser user)
-    {
+    {   
+        var cart = (await GetUserCart(user)).Where(c => c.PaidFor == false);
+        var currentProducts = new List<CartItem>();
+        foreach (var product in cart)
+        {
+            currentProducts.Add(product);
+            product.PaidFor = true;
+        }
+
         return new Order
-            {
-                Invoice = invoice,
-                Status = $"Payment: {invoice.Status}",
-                Products = await GetUserCart(user)
-            };
+        {
+            Invoice = invoice,
+            Status = $"Payment: {invoice.Status}",
+            Products = currentProducts
+        };
     }
 
     public async Task<long> GetTotalPrice(StoreUser user)

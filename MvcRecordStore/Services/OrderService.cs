@@ -22,6 +22,19 @@ public class OrderService : IOrderService
     }
 
     /// <summary>
+    /// Retrieves all the orders from the database.
+    /// </summary>
+    /// <returns>A list of all Orders objects existing in the database.</returns>
+    public List<Order> GetAllOrders()
+    {
+        return _context.Orders
+            .Include(o => o.Invoice)
+                .ThenInclude(o => o.Buyer)
+            .Include(o => o.Products)
+            .ToList();
+    }
+
+    /// <summary>
     /// Retrieves a list of the user's orders.
     /// </summary>
     /// <param name="user">The current logged in user.</param>
@@ -50,7 +63,7 @@ public class OrderService : IOrderService
                         .ThenInclude(p => p.Artist)
             .FirstOrDefaultAsync(o => o.ID == id);
     }
-
+    
     public async Task<List<Order>> ApplyFilters(IQueryable<Order> orders, string? currentFilter, int? sortOrder)
     {
         if (!String.IsNullOrEmpty(currentFilter))
