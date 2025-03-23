@@ -44,7 +44,7 @@ public class CartController : Controller
         PopulateIndexViewData(currentFilter, sortOrder, pageIndex);
 
         var user = await _userManager.GetUserAsync(User);
-        var cart = await _cartService.GetUserCart(user);
+        var cart = (await _cartService.GetUserCart(user)).Where(c => c.PaidFor == false);
         var pageSize = 10;
         var data = await _cartService.ApplyFilters(cart.AsQueryable(), currentFilter, sortOrder);
         ViewBag.TotalPages = Math.Ceiling(data.Count() / (double)pageSize);

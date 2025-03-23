@@ -10,6 +10,7 @@ using MvcRecordStore.Models;
 using MvcRecordStore.Models.ViewModels;
 using MvcRecordStore.Services;
 using Microsoft.Extensions.Configuration;
+using Microsoft.AspNetCore.Authorization;
 
 namespace MvcRecordStore.Controllers
 {
@@ -72,6 +73,8 @@ namespace MvcRecordStore.Controllers
         }
 
         // GET: Artists/Create
+        [Authorize(Roles = "Admin")]
+        [Route("Admin/Artists/Create")]
         public IActionResult Create()
         {
             PopulateViewData();
@@ -81,6 +84,8 @@ namespace MvcRecordStore.Controllers
         // POST: Artists/Create
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        [Authorize(Roles = "Admin")]
+        [Route("Admin/Artists/Create")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("ID,Name,Country,LabelID,SelectedGenres")] ArtistCreateVM artistVM)
@@ -90,7 +95,7 @@ namespace MvcRecordStore.Controllers
                 var artist = await _artistService.CreateNewArtist(artistVM);
                 _context.Add(artist);
                 await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction("Artists", "Admin");
             }
 
             PopulateViewData();
@@ -98,6 +103,8 @@ namespace MvcRecordStore.Controllers
         }
 
         // GET: Artists/Edit/5
+        [Authorize(Roles = "Admin")]
+        [Route("Admin/Artists/Edit/{id}")]
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -119,6 +126,8 @@ namespace MvcRecordStore.Controllers
         // POST: Artists/Edit/5
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        [Authorize(Roles = "Admin")]
+        [Route("Admin/Artists/Edit/{id}")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("ID,Name,Country,LabelID,SelectedGenres")] ArtistCreateVM artistVM)
@@ -152,10 +161,13 @@ namespace MvcRecordStore.Controllers
                     throw;
                 }
             }
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction("Artists", "Admin");
+
         }
 
         // GET: Artists/Delete/5
+        [Authorize(Roles = "Admin")]
+        [Route("Admin/Artists/Delete/{id}")]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -173,6 +185,8 @@ namespace MvcRecordStore.Controllers
         }
 
         // POST: Artists/Delete/5
+        [Authorize(Roles = "Admin")]
+        [Route("Admin/Artists/Delete/{id}")]
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
@@ -184,7 +198,7 @@ namespace MvcRecordStore.Controllers
             }
 
             await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction("Artists", "Admin");
         }
 
         public void PopulateIndexViewData(string? currentFilter, int? sortOrder, int? genreFilter, int? pageIndex)

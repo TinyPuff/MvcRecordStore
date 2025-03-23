@@ -16,7 +16,7 @@ using MvcRecordStore.Services;
 
 namespace MvcRecordStore.Controllers;
 
-[Authorize]
+[Authorize(Roles = "Admin")]
 public class OrdersController : Controller
 {
     private readonly StoreDbContext _context;

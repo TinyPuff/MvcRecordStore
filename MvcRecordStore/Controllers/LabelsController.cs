@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -12,6 +13,7 @@ using MvcRecordStore.Services;
 
 namespace MvcRecordStore.Controllers
 {
+    [Authorize(Roles = "Admin")]
     public class LabelsController : Controller
     {
         private readonly StoreDbContext _context;
@@ -47,6 +49,7 @@ namespace MvcRecordStore.Controllers
         }
 
         // GET: Labels/Create
+        [Route("Admin/Labels/Create")]
         public IActionResult Create()
         {
             return View();
@@ -55,6 +58,7 @@ namespace MvcRecordStore.Controllers
         // POST: Labels/Create
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        [Route("Admin/Labels/Create")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("ID,Name,Country")] LabelCreateVM labelVM)
@@ -67,10 +71,11 @@ namespace MvcRecordStore.Controllers
             var label = _labelService.CreateNewLabel(labelVM);
             _context.Add(label);
             await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction("Labels", "Admin");
         }
 
         // GET: Labels/Edit/5
+        [Route("Admin/Labels/Edit/{id}")]
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -92,6 +97,7 @@ namespace MvcRecordStore.Controllers
         // POST: Labels/Edit/5
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        [Route("Admin/Labels/Edit/{id}")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("ID,Name,Country")] LabelCreateVM labelVM)
@@ -123,10 +129,11 @@ namespace MvcRecordStore.Controllers
                     throw;
                 }
             }
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction("Labels", "Admin");
         }
 
         // GET: Labels/Delete/5
+        [Route("Admin/Labels/Delete/{id}")]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -144,6 +151,7 @@ namespace MvcRecordStore.Controllers
         }
 
         // POST: Labels/Delete/5
+        [Route("Admin/Labels/Delete/{id}")]
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
@@ -155,7 +163,7 @@ namespace MvcRecordStore.Controllers
             }
 
             await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction("Labels", "Admin");
         }
     }
 }
