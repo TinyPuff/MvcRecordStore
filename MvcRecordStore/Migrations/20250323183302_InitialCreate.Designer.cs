@@ -12,8 +12,8 @@ using MvcRecordStore.Data;
 namespace MvcRecordStore.Migrations
 {
     [DbContext(typeof(StoreDbContext))]
-    [Migration("20250313224217_MadeTheInvoiceGatewayPropertiesNullable")]
-    partial class MadeTheInvoiceGatewayPropertiesNullable
+    [Migration("20250323183302_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -309,6 +309,9 @@ namespace MvcRecordStore.Migrations
                     b.Property<int?>("OrderID")
                         .HasColumnType("int");
 
+                    b.Property<bool>("PaidFor")
+                        .HasColumnType("bit");
+
                     b.Property<int>("ProductID")
                         .HasColumnType("int");
 
@@ -374,6 +377,9 @@ namespace MvcRecordStore.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime>("PaymentDateTime")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -385,7 +391,6 @@ namespace MvcRecordStore.Migrations
                         .HasColumnType("bigint");
 
                     b.Property<string>("TransactionCode")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("ID");

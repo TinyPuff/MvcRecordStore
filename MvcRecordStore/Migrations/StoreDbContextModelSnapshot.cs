@@ -306,6 +306,9 @@ namespace MvcRecordStore.Migrations
                     b.Property<int?>("OrderID")
                         .HasColumnType("int");
 
+                    b.Property<bool>("PaidFor")
+                        .HasColumnType("bit");
+
                     b.Property<int>("ProductID")
                         .HasColumnType("int");
 

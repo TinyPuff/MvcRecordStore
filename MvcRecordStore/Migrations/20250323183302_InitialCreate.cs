@@ -186,20 +186,29 @@ namespace MvcRecordStore.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Orders",
+                name: "Invoices",
                 columns: table => new
                 {
                     ID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    TrackingNumber = table.Column<int>(type: "int", nullable: true),
+                    AdditionalData = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     BuyerID = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    TotalPrice = table.Column<double>(type: "float", nullable: false)
+                    GatewayAccountName = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    GatewayName = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    GatewayResponseCode = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    IsSucceed = table.Column<bool>(type: "bit", nullable: false),
+                    Message = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    PaymentDateTime = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Status = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    TotalPrice = table.Column<double>(type: "float", nullable: false),
+                    TrackingNumber = table.Column<long>(type: "bigint", nullable: false),
+                    TransactionCode = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Orders", x => x.ID);
+                    table.PrimaryKey("PK_Invoices", x => x.ID);
                     table.ForeignKey(
-                        name: "FK_Orders_AspNetUsers_BuyerID",
+                        name: "FK_Invoices_AspNetUsers_BuyerID",
                         column: x => x.BuyerID,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
@@ -223,6 +232,26 @@ namespace MvcRecordStore.Migrations
                         name: "FK_Artists_Labels_LabelID",
                         column: x => x.LabelID,
                         principalTable: "Labels",
+                        principalColumn: "ID",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Orders",
+                columns: table => new
+                {
+                    ID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    InvoiceID = table.Column<int>(type: "int", nullable: false),
+                    Status = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Orders", x => x.ID);
+                    table.ForeignKey(
+                        name: "FK_Orders_Invoices_InvoiceID",
+                        column: x => x.InvoiceID,
+                        principalTable: "Invoices",
                         principalColumn: "ID",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -334,6 +363,7 @@ namespace MvcRecordStore.Migrations
                     BuyerID = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     Quantity = table.Column<int>(type: "int", nullable: false),
                     ProductID = table.Column<int>(type: "int", nullable: false),
+                    PaidFor = table.Column<bool>(type: "bit", nullable: false),
                     OrderID = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
@@ -428,9 +458,14 @@ namespace MvcRecordStore.Migrations
                 column: "RecordsID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Orders_BuyerID",
-                table: "Orders",
+                name: "IX_Invoices_BuyerID",
+                table: "Invoices",
                 column: "BuyerID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Orders_InvoiceID",
+                table: "Orders",
+                column: "InvoiceID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_RecordPrices_RecordID",
@@ -488,10 +523,13 @@ namespace MvcRecordStore.Migrations
                 name: "Genres");
 
             migrationBuilder.DropTable(
-                name: "AspNetUsers");
+                name: "Invoices");
 
             migrationBuilder.DropTable(
                 name: "Records");
+
+            migrationBuilder.DropTable(
+                name: "AspNetUsers");
 
             migrationBuilder.DropTable(
                 name: "Artists");
